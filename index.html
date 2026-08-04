@@ -101,13 +101,108 @@ function defaultDay(){return {code:'',type:'Rostered',hd:false,start:'',finish:'
 function state(){return {startDate:$('#startDate').value,settings:Object.fromEntries(['baseRate','wdMult','satMult','sunMult','otMult','hdRate','maRate','nightRate','lease','gesb','postTax','calibration'].map(id=>[id,$('#'+id).value])),days:$$('.day').map(el=>({code:el.querySelector('.code').value,type:el.querySelector('.type').value,hd:el.querySelector('.hd').checked,start:el.querySelector('.start').value,finish:el.querySelector('.finish').value}))}}
 function build(saved){const start=parseDate($('#startDate').value),wrap=$('#roster');wrap.innerHTML='';for(let i=0;i<14;i++){const d=new Date(start);d.setDate(start.getDate()+i);const row=saved?.days?.[i]||defaultDay();const el=document.createElement('div');el.className='day';el.innerHTML=`<div class="dayhead"><div><b>${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</b><small>Day ${i+1}</small></div><span class="badge">$0</span></div><div class="fields"><label>Shift<select class="code">${codeOptions(row.code)}</select></label><label>Type<select class="type"><option ${row.type==='Rostered'?'selected':''}>Rostered</option><option ${row.type==='Picked-up OT'?'selected':''}>Picked-up OT</option><option ${row.type==='Leave'?'selected':''}>Leave</option><option ${row.type==='Off'?'selected':''}>Off</option></select></label><label>Start<input class="start" type="time" value="${row.start||''}"></label><label>Finish<input class="finish" type="time" value="${row.finish||''}"></label></div><label class="check"><input class="hd" type="checkbox" ${row.hd?'checked':''}><span>Higher duties</span></label><div class="rowmeta"><span class="timelabel">Off</span><b class="rowgross">$0</b></div>`;wrap.appendChild(el);el.querySelectorAll('input,select').forEach(x=>x.addEventListener('input',calculate))}calculate()}
 function calculate(){const start=parseDate($('#startDate').value);let gross=0,hours=0;$$('.day').forEach((el,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);const code=el.querySelector('.code').value,type=el.querySelector('.type').value,data=SHIFT_DATA[code];let st=el.querySelector('.start').value,fn=el.querySelector('.finish').value,rowGross=0,rowHours=0;if(data&&(!st||!fn))[st,fn]=data.times[group(d.getDay())];if(data&&st&&fn&&type!=='Off'){const sp=splitHours(d,st,fn);rowHours=sp.total;if(type==='Picked-up OT')rowGross+=sp.total*num('baseRate')*num('otMult');else if(type==='Leave')rowGross+=sp.total*num('baseRate');else rowGross+=sp.wd*num('baseRate')*num('wdMult')+sp.sat*num('baseRate')*num('satMult')+sp.sun*num('baseRate')*num('sunMult');if(type!=='Leave'){if(data.allowance==='Morn/Aft')rowGross+=sp.total*num('maRate');if(data.allowance==='Night')rowGross+=sp.total*num('nightRate');if(code==='AA1'||el.querySelector('.hd').checked)rowGross+=sp.total*num('hdRate')}el.querySelector('.timelabel').textContent=`${st}–${fn} • ${sp.total.toFixed(2)}h`}else el.querySelector('.timelabel').textContent='Off';el.querySelector('.rowgross').textContent=money(rowGross);el.querySelector('.badge').textContent=money(rowGross);gross+=rowGross;hours+=rowHours});const taxable=Math.max(0,gross-num('lease')-num('gesb'));const tax=taxable?Math.max(0,Math.round(annualTax(taxable*26)/26+num('calibration'))):0;const net=taxable-tax-num('postTax');$('#gross').textContent=money(gross);$('#taxable').textContent=money(taxable);$('#tax').textContent=money(tax);$('#hours').textContent=hours.toFixed(1);$('#net').textContent=money(net);$('#netHourly').textContent=money(hours?net/hours:0)}
-function normaliseTime(t){t=t.replace(/[.;]/g,':').replace(/O/g,'0').replace(/I/g,'1').trim();const m=t.match(/(\d{1,2})[:](\d{2})/);if(!m)return'';return `${String(Math.min(23,+m[1])).padStart(2,'0')}:${m[2]}`}
-function parseDateWords(text){const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};const m=text.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*[,\s]+(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})/i);if(!m)return'';const mon=months[m[2].slice(0,3).toLowerCase()];if(mon==null)return'';return localISO(new Date(+m[3],mon,+m[1]))}
-function cleanCode(s){s=s.toUpperCase().replace(/[^A-Z0-9]/g,'');const fixes={'5A':'SA','S4':'SA','2S':'25','2B':'23'};s=fixes[s]||s;return CODES.includes(s)?s:''}
-function clusterWords(words){const rows=[];for(const w of words||[]){if(!w.text?.trim())continue;const y=(w.bbox.y0+w.bbox.y1)/2;let row=rows.find(r=>Math.abs(r.y-y)<12);if(!row){row={y,words:[]};rows.push(row)}row.words.push(w)}rows.sort((a,b)=>a.y-b.y);rows.forEach(r=>r.words.sort((a,b)=>a.bbox.x0-b.bbox.x0));return rows.map(r=>r.words.map(w=>w.text).join(' '))}
-function extractRows(result){const lines=clusterWords(result.data.words);const found=[];for(const line of lines){const date=parseDateWords(line);if(!date)continue;const times=[...line.matchAll(/\b\d{1,2}[:.;]\d{2}\b/g)].map(m=>normaliseTime(m[0])).filter(Boolean);const parts=line.split(/\s+/);let code='';for(const p of parts){const c=cleanCode(p);if(c){code=c;break}}found.push({date,code,start:times[0]||'',finish:times[1]||''})}if(found.length)return found;const text=result.data.text||'';return text.split('\n').map(line=>{const date=parseDateWords(line);if(!date)return null;const times=[...line.matchAll(/\b\d{1,2}[:.;]\d{2}\b/g)].map(m=>normaliseTime(m[0])).filter(Boolean);let code='';for(const p of line.split(/\s+/)){const c=cleanCode(p);if(c){code=c;break}}return {date,code,start:times[0]||'',finish:times[1]||''}}).filter(Boolean)}
-function addReviewRow(r={date:'',code:'',start:'',finish:''}){const el=document.createElement('div');el.className='review-row';el.innerHTML=`<label>Date<input class="rdate" type="date" value="${r.date||''}"></label><label>Shift<select class="rcode">${codeOptions(r.code||'')}</select></label><label>Start<input class="rstart" type="time" value="${r.start||''}"></label><label>Finish<input class="rfinish" type="time" value="${r.finish||''}"></label><button type="button">×</button>`;el.querySelector('button').onclick=()=>el.remove();$('#reviewRows').appendChild(el)}
-async function runOCR(file){$('#preview').src=URL.createObjectURL(file);$('#preview').style.display='block';$('#progressWrap').style.display='block';$('#review').style.display='none';$('#reviewRows').innerHTML='';try{const result=await Tesseract.recognize(file,'eng',{logger:m=>{if(m.progress!=null)$('#progressBar').style.width=`${Math.round(m.progress*100)}%`;$('#ocrStatus').textContent=m.status?`${m.status} ${m.progress?Math.round(m.progress*100)+'%':''}`:'Processing…'}});const rows=extractRows(result);if(!rows.length)addReviewRow();else rows.forEach(addReviewRow);$('#review').style.display='block';$('#ocrStatus').textContent=`Detected ${rows.length} roster row${rows.length===1?'':'s'}. Check and correct them.`}catch(e){console.error(e);$('#ocrStatus').textContent='Could not read the image. Add the rows manually below.';addReviewRow();$('#review').style.display='block'}}
+function normaliseTime(t){
+  t=t.replace(/[.;]/g,':').replace(/O/g,'0').replace(/I/g,'1').trim();
+  const m=t.match(/(\d{1,2})[:](\d{2})/);
+  if(!m)return'';
+  const hh=+m[1],mm=+m[2];
+  if(hh>23||mm>59)return'';
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+function parseDateWords(text){
+  const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  const m=text.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*[,\s]+(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})/i);
+  if(!m)return'';
+  const mon=months[m[2].slice(0,3).toLowerCase()];
+  if(mon==null)return'';
+  return localISO(new Date(+m[3],mon,+m[1]));
+}
+function cleanCode(s){
+  s=s.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const fixes={'5A':'SA','S4':'SA','2S':'25','2B':'23','ZM':'2M','2H':'2M'};
+  s=fixes[s]||s;
+  return CODES.includes(s)?s:'';
+}
+function clusterWords(words){
+  const rows=[];
+  for(const w of words||[]){
+    if(!w.text?.trim())continue;
+    const y=(w.bbox.y0+w.bbox.y1)/2;
+    let row=rows.find(r=>Math.abs(r.y-y)<12);
+    if(!row){row={y,words:[]};rows.push(row)}
+    row.words.push(w);
+  }
+  rows.sort((a,b)=>a.y-b.y);
+  rows.forEach(r=>r.words.sort((a,b)=>a.bbox.x0-b.bbox.x0));
+  return rows.map(r=>({y:r.y,text:r.words.map(w=>w.text).join(' '),words:r.words}));
+}
+function expectedTimes(code,date){
+  const data=SHIFT_DATA[code];
+  if(!data)return['',''];
+  return data.times[group(parseDate(date).getDay())]||['',''];
+}
+function looksLikePhoneTime(t){
+  // The bad 13:43 / 13:44 values came from the phone/status area, not the roster.
+  return ['13:43','13:44','13:42','13:45','12:42','12:43','12:44','12:45'].includes(t);
+}
+function chooseRosterTimes(times,code,date){
+  const clean=times.filter(t=>t&&!looksLikePhoneTime(t));
+  let start=clean[0]||'',finish=clean[1]||'';
+  const [expectedStart,expectedFinish]=expectedTimes(code,date);
+  // If OCR found only one time and it is close to a known start, use the known finish.
+  if(code){
+    if(!start)start=expectedStart||'';
+    if(!finish)finish=expectedFinish||'';
+    // Reject wildly implausible OCR times when a known shift code gives reliable times.
+    const known=[expectedStart,expectedFinish];
+    if(known[0]&&known[1]){
+      if(start&&Math.abs(mins(start)-mins(known[0]))>180)start=known[0];
+      const diff=Math.min(Math.abs(mins(finish)-mins(known[1])),1440-Math.abs(mins(finish)-mins(known[1])));
+      if(finish&&diff>180)finish=known[1];
+    }
+  }
+  return [start,finish];
+}
+function fillMissingDates(found){
+  if(!found.length)return found;
+  found.sort((a,b)=>a.date.localeCompare(b.date));
+  const start=parseDate(found[0].date),end=parseDate(found[found.length-1].date);
+  const byDate=new Map(found.map(r=>[r.date,r]));
+  const out=[];
+  for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
+    const key=localISO(d);
+    out.push(byDate.get(key)||{date:key,code:'',start:'',finish:'',missing:true});
+  }
+  return out;
+}
+function extractRows(result){
+  const lines=clusterWords(result.data.words);
+  const found=[];
+  for(const row of lines){
+    const date=parseDateWords(row.text);
+    if(!date)continue;
+    const rawTimes=[...row.text.matchAll(/\b\d{1,2}[:.;]\d{2}\b/g)].map(m=>normaliseTime(m[0])).filter(Boolean);
+    let code='';
+    for(const p of row.text.split(/\s+/)){const c=cleanCode(p);if(c){code=c;break}}
+    const [start,finish]=chooseRosterTimes(rawTimes,code,date);
+    found.push({date,code,start,finish});
+  }
+  if(!found.length){
+    const text=result.data.text||'';
+    for(const line of text.split('\n')){
+      const date=parseDateWords(line);
+      if(!date)continue;
+      const rawTimes=[...line.matchAll(/\b\d{1,2}[:.;]\d{2}\b/g)].map(m=>normaliseTime(m[0])).filter(Boolean);
+      let code='';
+      for(const p of line.split(/\s+/)){const c=cleanCode(p);if(c){code=c;break}}
+      const [start,finish]=chooseRosterTimes(rawTimes,code,date);
+      found.push({date,code,start,finish});
+    }
+  }
+  return fillMissingDates(found);
+}
+function addReviewRow(r={date:'',code:'',start:'',finish:''}){const el=document.createElement('div');el.className='review-row';if(r.missing)el.style.background='#fff7e8';el.innerHTML=`<label>Date<input class="rdate" type="date" value="${r.date||''}"></label><label>Shift<select class="rcode">${codeOptions(r.code||'')}</select></label><label>Start<input class="rstart" type="time" value="${r.start||''}"></label><label>Finish<input class="rfinish" type="time" value="${r.finish||''}"></label><button type="button">×</button>`;el.querySelector('button').onclick=()=>el.remove();$('#reviewRows').appendChild(el)}
+async function runOCR(file){$('#preview').src=URL.createObjectURL(file);$('#preview').style.display='block';$('#progressWrap').style.display='block';$('#review').style.display='none';$('#reviewRows').innerHTML='';try{const result=await Tesseract.recognize(file,'eng',{logger:m=>{if(m.progress!=null)$('#progressBar').style.width=`${Math.round(m.progress*100)}%`;$('#ocrStatus').textContent=m.status?`${m.status} ${m.progress?Math.round(m.progress*100)+'%':''}`:'Processing…'}});const rows=extractRows(result);if(!rows.length)addReviewRow();else rows.forEach(addReviewRow);$('#review').style.display='block';$('#ocrStatus').textContent=`Detected ${rows.length} calendar rows. Missing dates were added automatically; check and correct them.`}catch(e){console.error(e);$('#ocrStatus').textContent='Could not read the image. Add the rows manually below.';addReviewRow();$('#review').style.display='block'}}
 $('#cameraInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)runOCR(file)});
 $('#addReviewRow').onclick=()=>addReviewRow();
 $('#applyImport').onclick=()=>{const rows=$$('.review-row').map(el=>({date:el.querySelector('.rdate').value,code:el.querySelector('.rcode').value,start:el.querySelector('.rstart').value,finish:el.querySelector('.rfinish').value})).filter(r=>r.date);if(!rows.length){toast('No dated rows to apply');return}rows.sort((a,b)=>a.date.localeCompare(b.date));$('#startDate').value=rows[0].date;const imported={startDate:rows[0].date,days:Array.from({length:14},()=>defaultDay())};for(const r of rows){const idx=Math.round((parseDate(r.date)-parseDate(imported.startDate))/86400000);if(idx>=0&&idx<14)imported.days[idx]={code:r.code,type:'Rostered',hd:r.code==='AA1',start:r.start,finish:r.finish}}build(imported);toast('Roster applied — review any errors below')};
