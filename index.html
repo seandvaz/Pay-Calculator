@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102a43">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pay Calc">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+<title>Roster Pay Calculator</title>
+</head>
+<body>
+<header class="appbar"><h1>Roster Pay Calculator</h1><p>PTA-style roster and take-home estimator</p></header>
+<main class="container">
+<section class="panel">
+<div class="two">
+<label>Fortnight start<input id="startDate" type="date"></label>
+<label>Base hourly rate<input id="baseRate" type="number" step=".01"></label>
+</div>
+</section>
+
+<section class="panel">
+<h2>Estimated pay</h2>
+<div class="hero-grid">
+<div class="metric"><span>Gross</span><strong id="gross">$0</strong></div>
+<div class="metric"><span>Taxable pay</span><strong id="taxable">$0</strong></div>
+<div class="metric"><span>Estimated tax</span><strong id="tax">$0</strong></div>
+<div class="metric"><span>Worked hours</span><strong id="hours">0</strong></div>
+<div class="metric net"><span>Estimated bank deposit</span><strong id="net">$0</strong></div>
+<div class="metric net"><span>Net per worked hour</span><strong id="netHourly">$0</strong></div>
+<div class="metric"><span>Picked-up OT gross</span><strong id="otGross">$0</strong></div>
+<div class="metric"><span>Approx. OT take-home</span><strong id="otNetApprox">$0</strong></div>
+</div>
+</section>
+
+<section class="panel">
+<h2>Fortnight roster</h2>
+<div id="rosterList"></div>
+</section>
+
+<details class="panel">
+<summary>Rates and deductions</summary>
+<div class="settings" style="margin-top:12px">
+<label>Weekday multiplier<input id="wdMult" type="number" step=".01"></label>
+<label>Saturday multiplier<input id="satMult" type="number" step=".01"></label>
+<label>Sunday multiplier<input id="sunMult" type="number" step=".01"></label>
+<label>Picked-up OT multiplier<input id="otMult" type="number" step=".01"></label>
+<label>Higher duties / hr<input id="higherDuties" type="number" step=".01"></label>
+<label>Morning/afternoon / hr<input id="maAllowance" type="number" step=".01"></label>
+<label>Night allowance / hr<input id="nightAllowance" type="number" step=".01"></label>
+<label>Novated lease pre-tax<input id="lease" type="number" step=".01"></label>
+<label>GESB pre-tax<input id="gesb" type="number" step=".01"></label>
+<label>Other pre-tax<input id="otherPre" type="number" step=".01"></label>
+<label>Post-tax deductions<input id="postTax" type="number" step=".01"></label>
+<label>Tax calibration<input id="taxCalibration" type="number" step=".01"></label>
+</div>
+</details>
+
+<section class="panel notice">
+<strong>Estimate only.</strong> Overnight shifts are split at midnight and each portion is paid according to the calendar day it falls on. Shift times come from the supplied roster images and older shift sheet, with manual time overrides available.
+</section>
+</main>
+<nav class="bottom">
+<button id="reset" class="danger">Reset</button>
+<button id="share" class="secondary">Share</button>
+<button id="save" class="primary">Save</button>
+</nav>
+<div id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
