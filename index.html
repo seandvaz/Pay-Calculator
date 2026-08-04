@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="Pay Calc">
 <title>Roster Pay Calculator</title>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#f3f5f7;--card:#fff;--ink:#14202b;--muted:#667483;--brand:#102a43;--accent:#1976d2;--good:#14733f;--line:#dce3e9;--warn:#8a4b00}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
@@ -21,24 +22,29 @@ button{font:inherit}.primary{background:var(--accent);color:#fff;border:0;border
 .summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f6f8fa;border-radius:14px;padding:12px}.metric span{font-size:12px;color:var(--muted)}.metric b{display:block;font-size:21px;margin-top:3px}.metric.hero{grid-column:1/-1;background:#eaf6ee}.metric.hero b{font-size:30px;color:var(--good)}
 .day{border-top:1px solid var(--line);padding:12px 0}.day:first-child{border-top:0}.dayhead{display:flex;justify-content:space-between;align-items:center}.dayhead small{display:block;color:var(--muted)}.badge{background:#edf3f8;border-radius:999px;padding:6px 9px;font-size:12px;font-weight:800}
 .fields{display:grid;grid-template-columns:1.3fr 1fr;gap:9px;margin-top:9px}.check{display:flex;align-items:center;gap:7px;padding-top:22px}.check input{width:21px;height:21px;margin:0}.rowmeta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:8px}.rowmeta b{color:var(--ink)}
-.importbox{background:#eef7ff;border:1px solid #c9e1f6;border-radius:15px;padding:12px}.camera{display:block;width:100%;padding:14px;text-align:center;background:#1976d2;color:#fff;border-radius:13px;font-weight:800}.camera input{display:none}
+.importbox{background:#eef7ff;border:1px solid #c9e1f6;border-radius:15px;padding:12px}.import-help{margin:0 0 12px;color:#567;font-size:13px;line-height:1.4}.import-actions{display:grid;grid-template-columns:1fr;gap:8px}.camera{display:block;width:100%;padding:14px;text-align:center;background:#1976d2;color:#fff;border-radius:13px;font-weight:800}.secondary-camera{background:#e8eef4;color:#23415d}.camera input{display:none}
 .progress{margin-top:10px;height:10px;background:#dce7f0;border-radius:999px;overflow:hidden}.progress>div{height:100%;width:0;background:#1976d2;transition:.2s}.status{font-size:13px;color:#567;margin-top:8px}
 .preview{width:100%;max-height:280px;object-fit:contain;border-radius:12px;margin-top:10px;background:#111;display:none}
-.review{margin-top:12px}.review-row{display:grid;grid-template-columns:1.25fr .8fr .85fr .85fr auto;gap:6px;align-items:end;padding:8px 0;border-top:1px solid #dce3e9}.review-row:first-child{border-top:0}.review-row input,.review-row select{padding:9px;font-size:14px}.review-row button{padding:9px;border:0;border-radius:9px;background:#f7e9e9;color:#9a2c2c;font-weight:700}.review-actions{display:flex;gap:8px;margin-top:10px}.review-actions button{flex:1}
+.review{margin-top:12px}.review-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;padding:10px 0;border-top:1px solid #dce3e9}.review-row:first-child{border-top:0}.review-row input,.review-row select{padding:10px;font-size:15px}.review-row button{grid-column:1/-1;padding:9px;border:0;border-radius:9px;background:#f7e9e9;color:#9a2c2c;font-weight:700}.review-actions{display:flex;gap:8px;margin-top:10px}.review-actions button{flex:1}
 .notice{background:#fff7e8;border-color:#f2d395;font-size:13px;line-height:1.45;color:#5f3a00}
 .bottom{position:fixed;left:0;right:0;bottom:0;display:flex;gap:9px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(243,245,247,.97);border-top:1px solid var(--line);z-index:30}.bottom button{flex:1}
 #toast{position:fixed;left:50%;bottom:95px;transform:translate(-50%,20px);background:#14202b;color:#fff;padding:10px 14px;border-radius:999px;opacity:0;transition:.2s;z-index:50}#toast.show{opacity:1;transform:translate(-50%,0)}
-@media(min-width:720px){.summary{grid-template-columns:repeat(4,1fr)}.metric.hero{grid-column:span 2}.fields{grid-template-columns:1.4fr 1fr 1fr 1fr}}
+@media(min-width:720px){.summary{grid-template-columns:repeat(4,1fr)}.metric.hero{grid-column:span 2}.fields{grid-template-columns:1.4fr 1fr 1fr 1fr}.import-actions{grid-template-columns:repeat(3,1fr)}.review-row{grid-template-columns:1.25fr .8fr .85fr .85fr auto}.review-row button{grid-column:auto}}
 </style>
 </head>
 <body>
-<header><h1>Roster Pay Calculator</h1><p>Take a roster photo, review detected rows, then calculate pay</p></header>
+<header><h1>Roster Pay Calculator</h1><p>Import a roster photo or PDF, review detected rows, then calculate pay</p></header>
 <main>
 <section class="card importbox">
-<h2>Import roster from camera</h2>
-<label class="camera">Take photo of roster<input id="cameraInput" type="file" accept="image/*" capture="environment"></label>
+<h2>Import roster</h2>
+<p class="import-help">Take a photo now, choose an existing photo, or import a saved PDF.</p>
+<div class="import-actions">
+<label class="camera">Take photo<input id="cameraInput" type="file" accept="image/*" capture="environment"></label>
+<label class="camera secondary-camera">Choose photo<input id="photoInput" type="file" accept="image/*"></label>
+<label class="camera secondary-camera">Import PDF<input id="pdfInput" type="file" accept="application/pdf,.pdf"></label>
+</div>
 <img id="preview" class="preview" alt="Roster preview">
-<div id="progressWrap" style="display:none"><div class="progress"><div id="progressBar"></div></div><div id="ocrStatus" class="status">Preparing OCR…</div></div>
+<div id="progressWrap" style="display:none"><div class="progress"><div id="progressBar"></div></div><div id="ocrStatus" class="status">Preparing import…</div></div>
 <div id="review" class="review" style="display:none">
 <h2 style="margin-top:12px">Review detected rows</h2>
 <div id="reviewRows"></div>
@@ -79,7 +85,7 @@ button{font:inherit}.primary{background:var(--accent);color:#fff;border:0;border
 <label>Tax calibration<input id="calibration" type="number" step=".01" value="87"></label>
 </div></details>
 
-<section class="card notice"><b>Photo import is assisted, not guaranteed.</b> The app highlights the detected rows for review. You can edit every date, shift code, start and finish time before applying them.</section>
+<section class="card notice"><b>Import is assisted, not guaranteed.</b> Photos and image-based PDFs are read on your device. Check every detected date, shift code, start and finish time before applying them.</section>
 </main>
 <div class="bottom"><button id="reset" class="danger">Reset</button><button id="share" class="secondary">Share</button><button id="save" class="primary">Save</button></div>
 <div id="toast"></div>
@@ -203,7 +209,44 @@ function extractRows(result){
 }
 function addReviewRow(r={date:'',code:'',start:'',finish:''}){const el=document.createElement('div');el.className='review-row';if(r.missing)el.style.background='#fff7e8';el.innerHTML=`<label>Date<input class="rdate" type="date" value="${r.date||''}"></label><label>Shift<select class="rcode">${codeOptions(r.code||'')}</select></label><label>Start<input class="rstart" type="time" value="${r.start||''}"></label><label>Finish<input class="rfinish" type="time" value="${r.finish||''}"></label><button type="button">×</button>`;el.querySelector('button').onclick=()=>el.remove();$('#reviewRows').appendChild(el)}
 async function runOCR(file){$('#preview').src=URL.createObjectURL(file);$('#preview').style.display='block';$('#progressWrap').style.display='block';$('#review').style.display='none';$('#reviewRows').innerHTML='';try{const result=await Tesseract.recognize(file,'eng',{logger:m=>{if(m.progress!=null)$('#progressBar').style.width=`${Math.round(m.progress*100)}%`;$('#ocrStatus').textContent=m.status?`${m.status} ${m.progress?Math.round(m.progress*100)+'%':''}`:'Processing…'}});const rows=extractRows(result);if(!rows.length)addReviewRow();else rows.forEach(addReviewRow);$('#review').style.display='block';$('#ocrStatus').textContent=`Detected ${rows.length} calendar rows. Missing dates were added automatically; check and correct them.`}catch(e){console.error(e);$('#ocrStatus').textContent='Could not read the image. Add the rows manually below.';addReviewRow();$('#review').style.display='block'}}
+async function pdfToImageFile(file){
+  $('#progressWrap').style.display='block';
+  $('#ocrStatus').textContent='Opening PDF…';
+  $('#progressBar').style.width='8%';
+  const pdfjsLib=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+  const data=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data}).promise;
+  const page=await pdf.getPage(1);
+  const base=page.getViewport({scale:1});
+  const targetWidth=2200;
+  const scale=Math.max(2,targetWidth/base.width);
+  const viewport=page.getViewport({scale});
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.ceil(viewport.width);
+  canvas.height=Math.ceil(viewport.height);
+  const ctx=canvas.getContext('2d',{alpha:false});
+  ctx.fillStyle='#fff';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  await page.render({canvasContext:ctx,viewport}).promise;
+  $('#progressBar').style.width='18%';
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.95));
+  if(!blob)throw new Error('Could not render PDF');
+  return new File([blob],file.name.replace(/\.pdf$/i,'')+'.jpg',{type:'image/jpeg'});
+}
+async function handlePDF(file){
+  try{
+    const imageFile=await pdfToImageFile(file);
+    await runOCR(imageFile);
+  }catch(e){
+    console.error(e);
+    $('#progressWrap').style.display='block';
+    $('#ocrStatus').textContent='Could not read this PDF. Try sharing it from Books to Files, then import it again.';
+  }
+}
 $('#cameraInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)runOCR(file)});
+$('#photoInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)runOCR(file)});
+$('#pdfInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)handlePDF(file)});
 $('#addReviewRow').onclick=()=>addReviewRow();
 $('#applyImport').onclick=()=>{const rows=$$('.review-row').map(el=>({date:el.querySelector('.rdate').value,code:el.querySelector('.rcode').value,start:el.querySelector('.rstart').value,finish:el.querySelector('.rfinish').value})).filter(r=>r.date);if(!rows.length){toast('No dated rows to apply');return}rows.sort((a,b)=>a.date.localeCompare(b.date));$('#startDate').value=rows[0].date;const imported={startDate:rows[0].date,days:Array.from({length:14},()=>defaultDay())};for(const r of rows){const idx=Math.round((parseDate(r.date)-parseDate(imported.startDate))/86400000);if(idx>=0&&idx<14)imported.days[idx]={code:r.code,type:'Rostered',hd:r.code==='AA1',start:r.start,finish:r.finish}}build(imported);toast('Roster applied — review any errors below')};
 const saved=JSON.parse(localStorage.getItem('ptaPayOCR')||'null');$('#startDate').value=saved?.startDate||new Date().toISOString().slice(0,10);Object.entries(saved?.settings||{}).forEach(([k,v])=>{if($('#'+k))$('#'+k).value=v});build(saved);$('#startDate').addEventListener('change',()=>build(state()));['baseRate','wdMult','satMult','sunMult','otMult','hdRate','maRate','nightRate','lease','gesb','postTax','calibration'].forEach(id=>$('#'+id).addEventListener('input',calculate));$('#save').onclick=()=>{localStorage.setItem('ptaPayOCR',JSON.stringify(state()));toast('Saved on this device')};$('#reset').onclick=()=>{if(confirm('Clear current roster?')){localStorage.removeItem('ptaPayOCR');location.reload()}};$('#share').onclick=async()=>{const text=`Estimated take-home: ${$('#net').textContent}\nGross: ${$('#gross').textContent}\nHours: ${$('#hours').textContent}`;if(navigator.share)await navigator.share({title:'Roster pay estimate',text});else navigator.clipboard.writeText(text)};
