@@ -24,7 +24,7 @@ button{font:inherit}.primary{background:var(--accent);color:#fff;border:0;border
 .fields{display:grid;grid-template-columns:1.3fr 1fr;gap:9px;margin-top:9px}.check{display:flex;align-items:center;gap:7px;padding-top:22px}.check input{width:21px;height:21px;margin:0}.rowmeta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:8px}.rowmeta b{color:var(--ink)}
 .importbox{background:#eef7ff;border:1px solid #c9e1f6;border-radius:15px;padding:12px}.import-help{margin:0 0 12px;color:#567;font-size:13px;line-height:1.4}.import-actions{display:grid;grid-template-columns:1fr;gap:8px}.camera{display:block;width:100%;padding:14px;text-align:center;background:#1976d2;color:#fff;border-radius:13px;font-weight:800}.secondary-camera{background:#e8eef4;color:#23415d}.camera input{display:none}
 .progress{margin-top:10px;height:10px;background:#dce7f0;border-radius:999px;overflow:hidden}.progress>div{height:100%;width:0;background:#1976d2;transition:.2s}.status{font-size:13px;color:#567;margin-top:8px}
-.preview{width:100%;max-height:280px;object-fit:contain;border-radius:12px;margin-top:10px;background:#111;display:none}
+.preview{width:100%;max-height:280px;object-fit:contain;border-radius:12px;margin-top:10px;background:#111;display:none}.crop-controls{margin-top:10px;padding:10px;background:#fff;border:1px solid #c9d8e6;border-radius:12px}.crop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.crop-grid input[type=range]{padding:0;border:0}
 .review{margin-top:12px}.review-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;padding:10px 0;border-top:1px solid #dce3e9}.review-row:first-child{border-top:0}.review-row input,.review-row select{padding:10px;font-size:15px}.review-row button{grid-column:1/-1;padding:9px;border:0;border-radius:9px;background:#f7e9e9;color:#9a2c2c;font-weight:700}.review-actions{display:flex;gap:8px;margin-top:10px}.review-actions button{flex:1}
 .notice{background:#fff7e8;border-color:#f2d395;font-size:13px;line-height:1.45;color:#5f3a00}
 .bottom{position:fixed;left:0;right:0;bottom:0;display:flex;gap:9px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(243,245,247,.97);border-top:1px solid var(--line);z-index:30}.bottom button{flex:1}
@@ -37,13 +37,23 @@ button{font:inherit}.primary{background:var(--accent);color:#fff;border:0;border
 <main>
 <section class="card importbox">
 <h2>Import roster</h2>
-<p class="import-help">Take a photo now, choose an existing photo, or import a saved PDF.</p>
+<p class="import-help">Import the roster, crop tightly around the table, then scan it.</p>
 <div class="import-actions">
 <label class="camera">Take photo<input id="cameraInput" type="file" accept="image/*" capture="environment"></label>
 <label class="camera secondary-camera">Choose photo<input id="photoInput" type="file" accept="image/*"></label>
 <label class="camera secondary-camera">Import PDF<input id="pdfInput" type="file" accept="application/pdf,.pdf"></label>
 </div>
 <img id="preview" class="preview" alt="Roster preview">
+<div id="cropControls" class="crop-controls" style="display:none">
+  <div class="crop-grid">
+    <label>Crop top<input id="cropTop" type="range" min="0" max="70" value="12"></label>
+    <label>Crop bottom<input id="cropBottom" type="range" min="30" max="100" value="92"></label>
+    <label>Crop left<input id="cropLeft" type="range" min="0" max="40" value="2"></label>
+    <label>Crop right<input id="cropRight" type="range" min="60" max="100" value="98"></label>
+  </div>
+  <button id="scanCrop" class="primary" type="button" style="width:100%;margin-top:10px">Scan selected area</button>
+  <div class="status">Keep only the roster table inside the crop. Exclude browser bars, black borders and the app screen.</div>
+</div>
 <div id="progressWrap" style="display:none"><div class="progress"><div id="progressBar"></div></div><div id="ocrStatus" class="status">Preparing import…</div></div>
 <div id="review" class="review" style="display:none">
 <h2 style="margin-top:12px">Review detected rows</h2>
@@ -85,7 +95,7 @@ button{font:inherit}.primary{background:var(--accent);color:#fff;border:0;border
 <label>Tax calibration<input id="calibration" type="number" step=".01" value="87"></label>
 </div></details>
 
-<section class="card notice"><b>Import is assisted, not guaranteed.</b> Photos and image-based PDFs are read on your device. Check every detected date, shift code, start and finish time before applying them.</section>
+<section class="card notice"><b>Crop quality matters.</b> Include only the roster table. Exclude browser controls, black borders and surrounding screens. Check the detected dates and shift codes. Times are filled automatically from the built-in roster rules.</section>
 </main>
 <div class="bottom"><button id="reset" class="danger">Reset</button><button id="share" class="secondary">Share</button><button id="save" class="primary">Save</button></div>
 <div id="toast"></div>
@@ -152,22 +162,14 @@ function looksLikePhoneTime(t){
   return ['13:43','13:44','13:42','13:45','12:42','12:43','12:44','12:45'].includes(t);
 }
 function chooseRosterTimes(times,code,date){
-  const clean=times.filter(t=>t&&!looksLikePhoneTime(t));
-  let start=clean[0]||'',finish=clean[1]||'';
-  const [expectedStart,expectedFinish]=expectedTimes(code,date);
-  // If OCR found only one time and it is close to a known start, use the known finish.
+  // Do not trust OCR times. When a recognised shift code is detected,
+  // always use the detailed roster times already built into the app.
   if(code){
-    if(!start)start=expectedStart||'';
-    if(!finish)finish=expectedFinish||'';
-    // Reject wildly implausible OCR times when a known shift code gives reliable times.
-    const known=[expectedStart,expectedFinish];
-    if(known[0]&&known[1]){
-      if(start&&Math.abs(mins(start)-mins(known[0]))>180)start=known[0];
-      const diff=Math.min(Math.abs(mins(finish)-mins(known[1])),1440-Math.abs(mins(finish)-mins(known[1])));
-      if(finish&&diff>180)finish=known[1];
-    }
+    const [expectedStart,expectedFinish]=expectedTimes(code,date);
+    return [expectedStart||'',expectedFinish||''];
   }
-  return [start,finish];
+  // If no shift code was recognised, leave times blank for manual correction.
+  return ['',''];
 }
 function fillMissingDates(found){
   if(!found.length)return found;
@@ -207,8 +209,66 @@ function extractRows(result){
   }
   return fillMissingDates(found);
 }
-function addReviewRow(r={date:'',code:'',start:'',finish:''}){const el=document.createElement('div');el.className='review-row';if(r.missing)el.style.background='#fff7e8';el.innerHTML=`<label>Date<input class="rdate" type="date" value="${r.date||''}"></label><label>Shift<select class="rcode">${codeOptions(r.code||'')}</select></label><label>Start<input class="rstart" type="time" value="${r.start||''}"></label><label>Finish<input class="rfinish" type="time" value="${r.finish||''}"></label><button type="button">×</button>`;el.querySelector('button').onclick=()=>el.remove();$('#reviewRows').appendChild(el)}
-async function runOCR(file){$('#preview').src=URL.createObjectURL(file);$('#preview').style.display='block';$('#progressWrap').style.display='block';$('#review').style.display='none';$('#reviewRows').innerHTML='';try{const result=await Tesseract.recognize(file,'eng',{logger:m=>{if(m.progress!=null)$('#progressBar').style.width=`${Math.round(m.progress*100)}%`;$('#ocrStatus').textContent=m.status?`${m.status} ${m.progress?Math.round(m.progress*100)+'%':''}`:'Processing…'}});const rows=extractRows(result);if(!rows.length)addReviewRow();else rows.forEach(addReviewRow);$('#review').style.display='block';$('#ocrStatus').textContent=`Detected ${rows.length} calendar rows. Missing dates were added automatically; check and correct them.`}catch(e){console.error(e);$('#ocrStatus').textContent='Could not read the image. Add the rows manually below.';addReviewRow();$('#review').style.display='block'}}
+function addReviewRow(r={date:'',code:'',start:'',finish:'',missing:false}){
+  const el=document.createElement('div');
+  el.className='review-row';
+  if(r.missing)el.style.background='#fff7e8';
+  el.innerHTML=`<label>Date<input class="rdate" type="date" value="${r.date||''}"></label>
+  <label>Shift<select class="rcode">${codeOptions(r.code||'')}</select></label>
+  <label>Start<input class="rstart" type="time" value="${r.start||''}"></label>
+  <label>Finish<input class="rfinish" type="time" value="${r.finish||''}"></label>
+  <button type="button">×</button>`;
+  const refill=()=>{
+    const date=el.querySelector('.rdate').value;
+    const code=el.querySelector('.rcode').value;
+    if(date&&code){
+      const [st,fn]=expectedTimes(code,date);
+      el.querySelector('.rstart').value=st||'';
+      el.querySelector('.rfinish').value=fn||'';
+    }
+  };
+  el.querySelector('.rcode').addEventListener('change',refill);
+  el.querySelector('.rdate').addEventListener('change',refill);
+  el.querySelector('button').onclick=()=>el.remove();
+  $('#reviewRows').appendChild(el);
+}
+async function runOCR(file,showCrop=true){
+  currentImportFile=file;
+  $('#preview').src=URL.createObjectURL(file);
+  $('#preview').style.display='block';
+  $('#cropControls').style.display=showCrop?'block':'none';
+  if(showCrop){
+    $('#ocrStatus').textContent='Adjust the crop, then tap “Scan selected area”.';
+    $('#progressWrap').style.display='block';
+    $('#progressBar').style.width='0%';
+    return;
+  }
+  $('#progressWrap').style.display='block';
+  $('#review').style.display='none';
+  $('#reviewRows').innerHTML='';
+  try{
+    const processed=await cropAndEnhance(file);
+    $('#preview').src=URL.createObjectURL(processed);
+    const result=await Tesseract.recognize(processed,'eng',{
+      logger:m=>{
+        if(m.progress!=null)$('#progressBar').style.width=`${Math.round(m.progress*100)}%`;
+        $('#ocrStatus').textContent=m.status?`${m.status} ${m.progress?Math.round(m.progress*100)+'%':''}`:'Processing…'
+      },
+      tessedit_pageseg_mode:'6',
+      preserve_interword_spaces:'1'
+    });
+    const rows=extractRows(result);
+    if(!rows.length)addReviewRow();else rows.forEach(addReviewRow);
+    $('#review').style.display='block';
+    $('#ocrStatus').textContent=`Detected ${rows.length} calendar rows. Check every field before applying.`;
+  }catch(e){
+    console.error(e);
+    $('#ocrStatus').textContent='Could not read the selected area. Adjust the crop and try again, or add rows manually.';
+    addReviewRow();
+    $('#review').style.display='block';
+  }
+}
+$('#scanCrop').onclick=()=>{if(currentImportFile)runOCR(currentImportFile,false)};
 async function pdfToImageFile(file){
   $('#progressWrap').style.display='block';
   $('#ocrStatus').textContent='Opening PDF…';
@@ -237,7 +297,7 @@ async function pdfToImageFile(file){
 async function handlePDF(file){
   try{
     const imageFile=await pdfToImageFile(file);
-    await runOCR(imageFile);
+    await runOCR(imageFile,true);
   }catch(e){
     console.error(e);
     $('#progressWrap').style.display='block';
@@ -248,7 +308,30 @@ $('#cameraInput').addEventListener('change',e=>{const file=e.target.files?.[0];i
 $('#photoInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)runOCR(file)});
 $('#pdfInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)handlePDF(file)});
 $('#addReviewRow').onclick=()=>addReviewRow();
-$('#applyImport').onclick=()=>{const rows=$$('.review-row').map(el=>({date:el.querySelector('.rdate').value,code:el.querySelector('.rcode').value,start:el.querySelector('.rstart').value,finish:el.querySelector('.rfinish').value})).filter(r=>r.date);if(!rows.length){toast('No dated rows to apply');return}rows.sort((a,b)=>a.date.localeCompare(b.date));$('#startDate').value=rows[0].date;const imported={startDate:rows[0].date,days:Array.from({length:14},()=>defaultDay())};for(const r of rows){const idx=Math.round((parseDate(r.date)-parseDate(imported.startDate))/86400000);if(idx>=0&&idx<14)imported.days[idx]={code:r.code,type:'Rostered',hd:r.code==='AA1',start:r.start,finish:r.finish}}build(imported);toast('Roster applied — review any errors below')};
+$('#applyImport').onclick=()=>{
+  const rows=$$('.review-row').map(el=>({
+    date:el.querySelector('.rdate').value,
+    code:el.querySelector('.rcode').value
+  })).filter(r=>r.date);
+  if(!rows.length){toast('No dated rows to apply');return}
+  rows.sort((a,b)=>a.date.localeCompare(b.date));
+  $('#startDate').value=rows[0].date;
+  const imported={startDate:rows[0].date,days:Array.from({length:14},()=>defaultDay())};
+  for(const r of rows){
+    const idx=Math.round((parseDate(r.date)-parseDate(imported.startDate))/86400000);
+    if(idx>=0&&idx<14){
+      imported.days[idx]={
+        code:r.code,
+        type:'Rostered',
+        hd:r.code==='AA1',
+        start:'',
+        finish:''
+      };
+    }
+  }
+  build(imported);
+  toast('Roster applied using default shift times');
+};for(const r of rows){const idx=Math.round((parseDate(r.date)-parseDate(imported.startDate))/86400000);if(idx>=0&&idx<14)imported.days[idx]={code:r.code,type:'Rostered',hd:r.code==='AA1',start:r.start,finish:r.finish}}build(imported);toast('Roster applied — review any errors below')};
 const saved=JSON.parse(localStorage.getItem('ptaPayOCR')||'null');$('#startDate').value=saved?.startDate||new Date().toISOString().slice(0,10);Object.entries(saved?.settings||{}).forEach(([k,v])=>{if($('#'+k))$('#'+k).value=v});build(saved);$('#startDate').addEventListener('change',()=>build(state()));['baseRate','wdMult','satMult','sunMult','otMult','hdRate','maRate','nightRate','lease','gesb','postTax','calibration'].forEach(id=>$('#'+id).addEventListener('input',calculate));$('#save').onclick=()=>{localStorage.setItem('ptaPayOCR',JSON.stringify(state()));toast('Saved on this device')};$('#reset').onclick=()=>{if(confirm('Clear current roster?')){localStorage.removeItem('ptaPayOCR');location.reload()}};$('#share').onclick=async()=>{const text=`Estimated take-home: ${$('#net').textContent}\nGross: ${$('#gross').textContent}\nHours: ${$('#hours').textContent}`;if(navigator.share)await navigator.share({title:'Roster pay estimate',text});else navigator.clipboard.writeText(text)};
 </script>
 </body></html>
