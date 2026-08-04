@@ -5,40 +5,44 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#102a43">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Pay Calc">
 <title>Roster Pay Calculator</title>
 <style>
 :root{--bg:#f3f5f7;--card:#fff;--ink:#14202b;--muted:#667483;--brand:#102a43;--accent:#1976d2;--good:#14733f;--line:#dce3e9;--warn:#8a4b00}
-*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
 header{position:sticky;top:0;z-index:20;background:rgba(16,42,67,.97);color:#fff;padding:max(14px,env(safe-area-inset-top)) 16px 14px;backdrop-filter:blur(14px)}
 header h1{font-size:20px;margin:0}header p{font-size:12px;margin:4px 0 0;opacity:.78}
-main{max-width:980px;margin:auto;padding:14px 14px calc(100px + env(safe-area-inset-bottom))}
+main{max-width:1000px;margin:auto;padding:14px 14px calc(100px + env(safe-area-inset-bottom))}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 4px 16px rgba(16,42,67,.06)}
 h2{font-size:17px;margin:0 0 12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 label{font-size:12px;color:var(--muted);display:block}input,select{width:100%;margin-top:5px;padding:12px;border:1px solid #c8d0d8;border-radius:12px;font-size:16px;background:#fff;color:var(--ink)}
 .summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f6f8fa;border-radius:14px;padding:12px}.metric span{font-size:12px;color:var(--muted)}.metric b{display:block;font-size:21px;margin-top:3px}
 .metric.hero{grid-column:1/-1;background:#eaf6ee}.metric.hero b{font-size:30px;color:var(--good)}
+.breakdown{display:grid;grid-template-columns:1fr 1fr;gap:8px}.break{padding:10px;border-radius:12px;background:#f8fafc}.break span{font-size:12px;color:var(--muted)}.break b{display:block;margin-top:3px}
 .day-card{border-top:1px solid var(--line);padding:13px 0}.day-card:first-child{border-top:0;padding-top:0}.day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .day-head strong{font-size:16px}.day-head small{display:block;color:var(--muted);margin-top:2px}.day-total{font-size:12px;font-weight:800;background:#edf3f8;border-radius:999px;padding:6px 9px}
-.shift-row{background:#f8fafc;border:1px solid #e1e7ec;border-radius:14px;padding:10px;margin-top:8px}.fields{display:grid;grid-template-columns:1.4fr 1fr;gap:9px}.check{display:flex;align-items:center;gap:8px;padding-top:22px}.check input{width:22px;height:22px;margin:0}.check span{font-size:14px;color:var(--ink)}
+.shift-row{background:#f8fafc;border:1px solid #e1e7ec;border-radius:14px;padding:10px;margin-top:8px}.fields{display:grid;grid-template-columns:1.4fr 1fr;gap:9px}
+.checks{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}.check{display:flex;align-items:center;gap:7px}.check input{width:21px;height:21px;margin:0}.check span{font-size:14px;color:var(--ink)}
 .row-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--muted)}.row-meta b{color:var(--ink)}.remove{border:0;background:#f7e9e9;color:#9a2c2c;border-radius:9px;padding:7px 9px;font-weight:700}
 .add-shift{width:100%;border:1px dashed #9bb0c2;background:#f5f8fb;color:#315a7d;border-radius:12px;padding:10px;font-weight:800;margin-top:9px}
 details{margin-top:10px}summary{font-weight:700;color:#315a7d;cursor:pointer}.settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .notice{background:#fff7e8;border-color:#f2d395;font-size:13px;line-height:1.45;color:#5f3a00}
+.sim-result{margin-top:12px;padding:12px;border-radius:14px;background:#eef7ff}.sim-result b{font-size:24px;color:#174e82}.saved-list{display:grid;gap:8px}.saved-item{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px;background:#f8fafc;border-radius:12px}
+.saved-item button{border:0;border-radius:9px;padding:8px 10px;font-weight:700}.load{background:#e8eef4;color:#23415d}.delete{background:#f7e9e9;color:#9a2c2c}
 .bottom{position:fixed;left:0;right:0;bottom:0;display:flex;gap:9px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(243,245,247,.97);border-top:1px solid var(--line);backdrop-filter:blur(12px);z-index:30}
 .bottom button{flex:1;border:0;border-radius:13px;padding:13px;font-weight:800;font-size:15px}.primary{background:var(--accent);color:#fff}.secondary{background:#e8eef4;color:#23415d}.danger{background:#f7e9e9;color:#9a2c2c}
-#toast{position:fixed;left:50%;bottom:95px;transform:translate(-50%,20px);background:#14202b;color:#fff;padding:10px 14px;border-radius:999px;opacity:0;pointer-events:none;transition:.2s;z-index:50;font-size:13px}#toast.show{opacity:1;transform:translate(-50%,0)}
-@media(min-width:720px){.summary{grid-template-columns:repeat(4,1fr)}.metric.hero{grid-column:span 2}.fields{grid-template-columns:1.6fr 1fr 1fr 1fr}.settings{grid-template-columns:repeat(4,1fr)}}
+#toast{position:fixed;left:50%;bottom:95px;transform:translate(-50%,20px);background:#14202b;color:#fff;padding:10px 14px;border-radius:999px;opacity:0;transition:.2s;z-index:50;font-size:13px}#toast.show{opacity:1;transform:translate(-50%,0)}
+@media(min-width:720px){.summary{grid-template-columns:repeat(4,1fr)}.metric.hero{grid-column:span 2}.fields{grid-template-columns:1.6fr 1fr 1fr 1fr}.settings{grid-template-columns:repeat(4,1fr)}.breakdown{grid-template-columns:repeat(4,1fr)}}
 </style>
 </head>
 <body>
-<header><h1>Roster Pay Calculator</h1><p>Fortnight roster and take-home estimator</p></header>
+<header><h1>Roster Pay Calculator</h1><p>Fortnight roster, take-home and overtime estimator</p></header>
 <main>
 <section class="card grid2">
 <label>Fortnight start<input id="startDate" type="date"></label>
 <label>Base hourly rate<input id="baseRate" type="number" step=".01" value="44.37"></label>
 </section>
+
 <section class="card">
 <h2>Estimated pay</h2>
 <div class="summary">
@@ -46,13 +50,50 @@ details{margin-top:10px}summary{font-weight:700;color:#315a7d;cursor:pointer}.se
 <div class="metric"><span>Taxable pay</span><b id="taxable">$0</b></div>
 <div class="metric"><span>Estimated tax</span><b id="tax">$0</b></div>
 <div class="metric"><span>Worked hours</span><b id="hours">0</b></div>
-<div class="metric"><span>Picked-up OT gross</span><b id="otGross">$0</b></div>
-<div class="metric"><span>Approx. OT take-home</span><b id="otNet">$0</b></div>
 <div class="metric hero"><span>Estimated bank deposit</span><b id="net">$0</b></div>
 <div class="metric hero"><span>Net per worked hour</span><b id="netHourly">$0</b></div>
 </div>
 </section>
+
+<section class="card">
+<h2>Pay breakdown</h2>
+<div class="breakdown">
+<div class="break"><span>Weekday base</span><b id="bdWeekday">$0</b></div>
+<div class="break"><span>Saturday</span><b id="bdSat">$0</b></div>
+<div class="break"><span>Sunday</span><b id="bdSun">$0</b></div>
+<div class="break"><span>Picked-up OT</span><b id="bdOT">$0</b></div>
+<div class="break"><span>Shift allowances</span><b id="bdAllow">$0</b></div>
+<div class="break"><span>Higher duties</span><b id="bdHD">$0</b></div>
+<div class="break"><span>Vehicle/transfer</span><b id="bdExtras">$0</b></div>
+<div class="break"><span>Other gross</span><b id="bdOther">$0</b></div>
+</div>
+</section>
+
 <section class="card"><h2>Fortnight roster</h2><div id="roster"></div></section>
+
+<section class="card">
+<h2>What if I pick up a shift?</h2>
+<div class="grid3">
+<label>Date<input id="simDate" type="date"></label>
+<label>Shift<select id="simShift"></select></label>
+<label>Type<select id="simType"><option>Picked-up OT</option><option>Rostered</option></select></label>
+</div>
+<div class="sim-result">
+<div>Extra gross: <b id="simGross">$0</b></div>
+<div style="margin-top:6px">Approx. extra take-home: <b id="simNet">$0</b></div>
+<div id="simDetail" style="margin-top:6px;font-size:12px;color:#567"></div>
+</div>
+</section>
+
+<section class="card">
+<h2>Saved fortnights</h2>
+<div class="grid2">
+<label>Save name<input id="saveName" placeholder="e.g. 9 Aug roster"></label>
+<button id="saveSnapshot" class="primary" style="border:0;border-radius:12px;font-weight:800">Save fortnight</button>
+</div>
+<div id="savedList" class="saved-list" style="margin-top:10px"></div>
+</section>
+
 <details class="card">
 <summary>Rates and deductions</summary>
 <div class="settings">
@@ -63,6 +104,8 @@ details{margin-top:10px}summary{font-weight:700;color:#315a7d;cursor:pointer}.se
 <label>Higher duties / hr<input id="hdRate" type="number" step=".01" value="4.87"></label>
 <label>Morn/afternoon allowance / hr<input id="maRate" type="number" step=".01" value="4.87"></label>
 <label>Night allowance / hr<input id="nightRate" type="number" step=".01" value="5.77"></label>
+<label>Vehicle allowance per shift<input id="vehicleRate" type="number" step=".01" value="9.58"></label>
+<label>Transfer allowance per shift<input id="transferRate" type="number" step=".01" value="44.37"></label>
 <label>Novated lease pre-tax<input id="lease" type="number" step=".01" value="546.95"></label>
 <label>GESB pre-tax<input id="gesb" type="number" step=".01" value="100"></label>
 <label>Other pre-tax<input id="otherPre" type="number" step=".01" value="0"></label>
@@ -70,135 +113,46 @@ details{margin-top:10px}summary{font-weight:700;color:#315a7d;cursor:pointer}.se
 <label>Tax calibration<input id="calibration" type="number" step=".01" value="87"></label>
 </div>
 </details>
-<section class="card notice"><b>Estimate only.</b> Overnight shifts are split at midnight and paid according to the calendar day each hour falls on. AA1 automatically adds higher duties. Shift times are based on the supplied roster photos and older shift sheet; use the time override if a current shift differs.</section>
+
+<section class="card notice"><b>Estimate only.</b> Overnight shifts split at midnight and each portion is paid according to the calendar day it falls on. AA1 automatically adds higher duties. Vehicle and transfer allowances are optional switches because the source material does not support a reliable automatic rule for when they apply.</section>
 </main>
+
 <div class="bottom"><button id="reset" class="danger">Reset</button><button id="share" class="secondary">Share</button><button id="save" class="primary">Save</button></div>
 <div id="toast"></div>
+
 <script>
-const SHIFT_DATA={"2A":{"name":"Delta Afternoon","category":"Delta","allowance":"Morn/Aft","times":{"sun":["15:30","01:30"],"monthu":["15:30","01:30"],"fri":["16:30","03:30"],"sat":["16:30","03:30"]}},"2M":{"name":"Delta Morning","category":"Delta","allowance":"Morn/Aft","times":{"sun":["05:30","15:30"],"monthu":["05:30","15:30"],"fri":["05:30","16:30"],"sat":["05:30","16:30"]}},"AR":{"name":"Armadale Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["15:30","01:30"],"monthu":["15:30","01:30"],"fri":["16:30","03:30"],"sat":["16:30","03:30"]}},"KL":{"name":"Kelmscott Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["15:15","01:15"],"monthu":["15:15","01:15"],"fri":["16:30","03:30"],"sat":["16:30","03:30"]}},"GS":{"name":"Gosnells Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["16:15","03:15"],"sat":["16:15","03:15"]}},"CA":{"name":"Cannington Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["14:45","00:45"],"monthu":["14:45","00:45"],"fri":["16:00","03:00"],"sat":["16:00","03:00"]}},"OS":{"name":"Oats Street Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["14:30","00:30"],"monthu":["14:30","00:30"],"fri":["15:30","02:45"],"sat":["15:30","02:45"]}},"BR":{"name":"Burswood Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["14:30","00:30"],"monthu":["14:30","00:30"],"fri":["15:45","02:45"],"sat":["15:45","02:45"]}},"TH":{"name":"Thornlie","category":"Station","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["15:00","01:00"],"sat":["15:00","01:00"]}},"VP":{"name":"Victoria Park Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["14:30","00:30"],"monthu":["14:30","00:30"],"fri":["15:30","02:45"],"sat":["15:30","02:45"]}},"20":{"name":"Train Riding 20","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["14:45","00:45"],"monthu":["14:45","00:45"],"fri":["16:00","02:00"],"sat":["16:00","02:00"]}},"21":{"name":"Train Riding 21","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["17:00","03:00"],"sat":["17:15","03:15"]}},"22":{"name":"Train Riding 22","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["17:00","03:00"],"sat":["17:15","03:15"]}},"23":{"name":"Train Riding 23","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["17:00","03:00"],"sat":["17:15","03:15"]}},"24":{"name":"Train Riding 24","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:15","01:15"],"monthu":["15:15","01:15"],"fri":["15:15","01:15"],"sat":["15:15","01:15"]}},"25":{"name":"Train Riding 25","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["17:00","03:00"],"sat":["17:00","03:00"]}},"91":{"name":"Shift 91","category":"Other","allowance":"Morn/Aft","times":{"sun":["14:45","00:45"],"monthu":["14:45","00:45"],"fri":["16:45","02:45"],"sat":["16:45","02:45"]}},"20V":{"name":"20V","category":"Other","allowance":"Morn/Aft","times":{"sun":["06:00","16:00"],"monthu":["05:00","15:00"],"fri":["05:00","15:00"],"sat":["05:00","15:00"]}},"21V":{"name":"21V","category":"Other","allowance":"Morn/Aft","times":{"sun":["07:00","17:00"],"monthu":["05:30","15:30"],"fri":["05:30","15:30"],"sat":["05:30","15:30"]}},"2DT":{"name":"2DT","category":"Other","allowance":"Morn/Aft","times":{"sun":["06:00","16:00"],"monthu":["05:00","15:00"],"fri":["05:00","15:00"],"sat":["05:00","15:00"]}},"AA1":{"name":"AA1 Higher Duties","category":"Higher Duties","allowance":"Morn/Aft","times":{"sun":["15:30","01:30"],"monthu":["15:30","01:30"],"fri":["17:30","03:30"],"sat":["17:30","03:30"]}},"AC":{"name":"AC","category":"Other","allowance":"","times":{"sun":[null,null],"monthu":["07:30","17:30"],"fri":["07:30","17:30"],"sat":[null,null]}},"BF":{"name":"BF","category":"Other","allowance":"Morn/Aft","times":{"sun":["15:15","01:15"],"monthu":["15:15","01:15"],"fri":["16:15","03:15"],"sat":["16:15","03:15"]}},"CAM":{"name":"CAM","category":"Other","allowance":"Morn/Aft","times":{"sun":["05:30","15:30"],"monthu":["05:30","15:30"],"fri":["05:30","16:30"],"sat":["05:30","16:30"]}},"3A":{"name":"3A","category":"Other","allowance":"","times":{"sun":["10:45","20:45"],"monthu":["10:45","20:45"],"fri":["10:45","20:45"],"sat":["10:45","20:45"]}},"3M":{"name":"3M","category":"Other","allowance":"Morn/Aft","times":{"sun":["06:00","16:00"],"monthu":["05:00","15:00"],"fri":["05:00","15:00"],"sat":["05:00","15:00"]}},"3N":{"name":"3N Night","category":"Other","allowance":"Night","times":{"sun":["19:30","05:30"],"monthu":["19:30","05:30"],"fri":["19:30","05:30"],"sat":["19:30","05:30"]}},"EQA":{"name":"EQA","category":"Other","allowance":"Morn/Aft","times":{"sun":["14:45","00:45"],"monthu":["14:45","00:45"],"fri":["15:45","02:30"],"sat":["15:45","02:30"]}},"EQM":{"name":"EQM","category":"Other","allowance":"Morn/Aft","times":{"sun":["05:00","15:00"],"monthu":["05:00","15:00"],"fri":["05:00","16:00"],"sat":["05:00","16:00"]}},"PA":{"name":"PA","category":"Other","allowance":"Morn/Aft","times":{"sun":["14:45","00:45"],"monthu":["14:45","00:45"],"fri":["15:45","02:45"],"sat":["15:45","02:45"]}},"PD":{"name":"PD","category":"Other","allowance":"Morn/Aft","times":{"sun":["05:30","15:30"],"monthu":["05:30","15:30"],"fri":["05:30","16:30"],"sat":["05:30","16:30"]}},"PDT":{"name":"PDT","category":"Other","allowance":"Morn/Aft","times":{"sun":["05:00","16:00"],"monthu":["05:00","15:00"],"fri":["05:00","15:00"],"sat":["05:00","15:00"]}},"PM":{"name":"PM","category":"Other","allowance":"Morn/Aft","times":{"sun":["05:00","15:00"],"monthu":["05:00","15:00"],"fri":["05:00","16:00"],"sat":["05:00","16:00"]}},"PN":{"name":"PN","category":"Other","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["16:30","03:30"],"sat":["16:30","03:30"]}},"PS":{"name":"PS","category":"Other","allowance":"Morn/Aft","times":{"sun":["14:45","00:45"],"monthu":["14:45","00:45"],"fri":["15:45","02:45"],"sat":["15:45","02:45"]}},"SA":{"name":"SA","category":"Other","allowance":"Morn/Aft","times":{"sun":["14:45","00:45"],"monthu":["14:45","00:45"],"fri":["16:45","02:45"],"sat":["16:45","02:45"]}},"SM":{"name":"SM","category":"Other","allowance":"Morn/Aft","times":{"sun":["05:30","15:30"],"monthu":["05:30","15:30"],"fri":["05:30","15:30"],"sat":["05:30","15:30"]}},"UD":{"name":"UD","category":"Other","allowance":"Morn/Aft","times":{"sun":["05:00","15:00"],"monthu":["05:00","15:00"],"fri":["05:00","16:00"],"sat":["05:00","16:00"]}}};
+const SHIFT_DATA={"2A":{"name":"Delta Afternoon","category":"Delta","allowance":"Morn/Aft","times":{"sun":["15:30","01:30"],"monthu":["15:30","01:30"],"fri":["16:30","03:30"],"sat":["16:30","03:30"]}},"2M":{"name":"Delta Morning","category":"Delta","allowance":"Morn/Aft","times":{"sun":["05:30","15:30"],"monthu":["05:30","15:30"],"fri":["05:30","16:30"],"sat":["05:30","16:30"]}},"AR":{"name":"Armadale Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["15:30","01:30"],"monthu":["15:30","01:30"],"fri":["16:30","03:30"],"sat":["16:30","03:30"]}},"KL":{"name":"Kelmscott Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["15:15","01:15"],"monthu":["15:15","01:15"],"fri":["16:30","03:30"],"sat":["16:30","03:30"]}},"GS":{"name":"Gosnells Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["16:15","03:15"],"sat":["16:15","03:15"]}},"CA":{"name":"Cannington Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["14:45","00:45"],"monthu":["14:45","00:45"],"fri":["16:00","03:00"],"sat":["16:00","03:00"]}},"OS":{"name":"Oats Street Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["14:30","00:30"],"monthu":["14:30","00:30"],"fri":["15:30","02:45"],"sat":["15:30","02:45"]}},"BR":{"name":"Burswood Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["14:30","00:30"],"monthu":["14:30","00:30"],"fri":["15:45","02:45"],"sat":["15:45","02:45"]}},"TH":{"name":"Thornlie","category":"Station","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["15:00","01:00"],"sat":["15:00","01:00"]}},"VP":{"name":"Victoria Park Station","category":"Station","allowance":"Morn/Aft","times":{"sun":["14:30","00:30"],"monthu":["14:30","00:30"],"fri":["15:30","02:45"],"sat":["15:30","02:45"]}},"20":{"name":"Train Riding 20","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["14:45","00:45"],"monthu":["14:45","00:45"],"fri":["16:00","02:00"],"sat":["16:00","02:00"]}},"21":{"name":"Train Riding 21","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["17:00","03:00"],"sat":["17:15","03:15"]}},"22":{"name":"Train Riding 22","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["17:00","03:00"],"sat":["17:15","03:15"]}},"23":{"name":"Train Riding 23","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["17:00","03:00"],"sat":["17:15","03:15"]}},"24":{"name":"Train Riding 24","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:15","01:15"],"monthu":["15:15","01:15"],"fri":["15:15","01:15"],"sat":["15:15","01:15"]}},"25":{"name":"Train Riding 25","category":"Train Riding","allowance":"Morn/Aft","times":{"sun":["15:00","01:00"],"monthu":["15:00","01:00"],"fri":["17:00","03:00"],"sat":["17:00","03:00"]}},"AA1":{"name":"AA1 Higher Duties","category":"Higher Duties","allowance":"Morn/Aft","times":{"sun":["15:30","01:30"],"monthu":["15:30","01:30"],"fri":["17:30","03:30"],"sat":["17:30","03:30"]}},"3N":{"name":"Night Shift","category":"Other","allowance":"Night","times":{"sun":["19:30","05:30"],"monthu":["19:30","05:30"],"fri":["19:30","05:30"],"sat":["19:30","05:30"]}}};
 const codes=['',...Object.keys(SHIFT_DATA).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))];
+const ids=['baseRate','wdMult','satMult','sunMult','otMult','hdRate','maRate','nightRate','vehicleRate','transferRate','lease','gesb','otherPre','postTax','calibration'];
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const money=n=>new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD'}).format(Number(n)||0);
 const num=id=>parseFloat($('#'+id).value)||0;
 function parseDate(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
-function dateKey(d){return d.toISOString().slice(0,10)}
 function group(day){return day===0?'sun':day<=4?'monthu':day===5?'fri':'sat'}
 function minutes(t){const [h,m]=t.split(':').map(Number);return h*60+m}
-function splitHours(date,start,finish){
-  let s=minutes(start),f=minutes(finish),tot=(f-s+1440)%1440;if(!tot)tot=1440;
-  let first=Math.min(tot,1440-s),second=tot-first,o={wd:0,sat:0,sun:0,total:tot/60};
-  const add=(day,m)=>day===6?o.sat+=m/60:day===0?o.sun+=m/60:o.wd+=m/60;
-  add(date.getDay(),first);if(second)add((date.getDay()+1)%7,second);return o;
-}
-function annualTax(i){
-  if(i<=18200)return 0;
-  let t=0;
-  if(i<=45000)t=(i-18200)*.15;
-  else if(i<=135000)t=4020+(i-45000)*.30;
-  else if(i<=190000)t=31020+(i-135000)*.37;
-  else t=51370+(i-190000)*.45;
-  return t+i*.02;
-}
+function splitHours(date,start,finish){let s=minutes(start),f=minutes(finish),tot=(f-s+1440)%1440;if(!tot)tot=1440;let first=Math.min(tot,1440-s),second=tot-first,o={wd:0,sat:0,sun:0,total:tot/60};const add=(day,m)=>day===6?o.sat+=m/60:day===0?o.sun+=m/60:o.wd+=m/60;add(date.getDay(),first);if(second)add((date.getDay()+1)%7,second);return o}
+function annualTax(i){if(i<=18200)return 0;let t=0;if(i<=45000)t=(i-18200)*.15;else if(i<=135000)t=4020+(i-45000)*.30;else if(i<=190000)t=31020+(i-135000)*.37;else t=51370+(i-190000)*.45;return t+i*.02}
 function opts(){return codes.map(c=>`<option value="${c}">${c?c+' — '+SHIFT_DATA[c].name:'Off / no shift'}</option>`).join('')}
-function defaultRow(){return {code:'',type:'Rostered',other:'0',hd:false,cs:'',cf:''}}
-function savedState(){try{return JSON.parse(localStorage.getItem('ptaPayV3')||'null')}catch{return null}}
-function currentState(){
-  return {
-    startDate:$('#startDate').value,
-    settings:Object.fromEntries(['baseRate','wdMult','satMult','sunMult','otMult','hdRate','maRate','nightRate','lease','gesb','otherPre','postTax','calibration'].map(id=>[id,$('#'+id).value])),
-    days:$$('.day-card').map(day=>({rows:[...day.querySelectorAll('.shift-row')].map(readRow)}))
-  };
-}
-function readRow(el){return {code:el.querySelector('.code').value,type:el.querySelector('.type').value,other:el.querySelector('.other').value,hd:el.querySelector('.hd').checked,cs:el.querySelector('.cs').value,cf:el.querySelector('.cf').value}}
+function defaultRow(){return {code:'',type:'Rostered',other:'0',hd:false,vehicle:false,transfer:false,cs:'',cf:''}}
+function readRow(el){return {code:el.querySelector('.code').value,type:el.querySelector('.type').value,other:el.querySelector('.other').value,hd:el.querySelector('.hd').checked,vehicle:el.querySelector('.vehicle').checked,transfer:el.querySelector('.transfer').checked,cs:el.querySelector('.cs').value,cf:el.querySelector('.cf').value}}
+function currentState(){return {startDate:$('#startDate').value,settings:Object.fromEntries(ids.map(id=>[id,$('#'+id).value])),days:$$('.day-card').map(day=>({rows:[...day.querySelectorAll('.shift-row')].map(readRow)}))}}
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),1700)}
-function rowHTML(row={}){
-  return `<div class="shift-row">
-    <div class="fields">
-      <label>Shift<select class="code">${opts()}</select></label>
-      <label>Type<select class="type"><option>Rostered</option><option>Picked-up OT</option><option>Leave</option><option>Off</option></select></label>
-      <label>Other gross<input class="other" type="number" step=".01" value="0"></label>
-      <label class="check"><input class="hd" type="checkbox"><span>Higher duties</span></label>
-    </div>
-    <details><summary>Override shift time</summary><div class="grid2"><label>Start<input class="cs" type="time"></label><label>Finish<input class="cf" type="time"></label></div></details>
-    <div class="row-meta"><span class="time-label">Off</span><span><b class="row-gross">$0</b> <button class="remove" type="button">Remove</button></span></div>
-  </div>`;
-}
-function applyRow(el,row){
-  el.querySelector('.code').value=row.code||'';
-  el.querySelector('.type').value=row.type||'Rostered';
-  el.querySelector('.other').value=row.other||0;
-  el.querySelector('.hd').checked=!!row.hd;
-  el.querySelector('.cs').value=row.cs||'';
-  el.querySelector('.cf').value=row.cf||'';
-}
-function wireRow(el){
-  el.querySelectorAll('input,select').forEach(x=>x.addEventListener('input',calculate));
-  el.querySelector('.remove').onclick=()=>{const day=el.closest('.day-card');if(day.querySelectorAll('.shift-row').length===1){applyRow(el,defaultRow())}else el.remove();calculate()};
-}
-function addRow(day,row=defaultRow()){
-  const holder=day.querySelector('.rows');holder.insertAdjacentHTML('beforeend',rowHTML(row));
-  const el=holder.lastElementChild;applyRow(el,row);wireRow(el);calculate();
-}
-function build(state){
-  const wrap=$('#roster');wrap.innerHTML='';const start=parseDate($('#startDate').value);
-  for(let i=0;i<14;i++){
-    const d=new Date(start);d.setDate(start.getDate()+i);
-    const day=document.createElement('section');day.className='day-card';day.dataset.index=i;
-    day.innerHTML=`<div class="day-head"><div><strong>${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</strong><small>Day ${i+1}</small></div><span class="day-total">$0</span></div><div class="rows"></div><button type="button" class="add-shift">+ Add another shift</button>`;
-    wrap.appendChild(day);
-    const rows=state?.days?.[i]?.rows?.length?state.days[i].rows:[defaultRow()];
-    rows.forEach(r=>addRow(day,r));
-    day.querySelector('.add-shift').onclick=()=>addRow(day);
-  }
-  calculate();
-}
-function getTimes(data,date,row){
-  let st=row.querySelector('.cs').value,fn=row.querySelector('.cf').value;
-  if((!st||!fn)&&data){[st,fn]=data.times[group(date.getDay())]||[null,null]}
-  return [st,fn];
-}
-function calculate(){
-  const start=parseDate($('#startDate').value);let gross=0,hours=0,otGross=0;
-  $$('.day-card').forEach((day,i)=>{
-    const date=new Date(start);date.setDate(start.getDate()+i);let dayGross=0;
-    day.querySelectorAll('.shift-row').forEach(row=>{
-      const code=row.querySelector('.code').value,type=row.querySelector('.type').value,data=SHIFT_DATA[code];
-      let rowGross=parseFloat(row.querySelector('.other').value)||0,rowHours=0,timeText='Off';
-      const [st,fn]=getTimes(data,date,row);
-      if(data&&st&&fn&&type!=='Off'){
-        const sp=splitHours(date,st,fn);rowHours=sp.total;timeText=`${st}–${fn} • ${rowHours.toFixed(2)}h`;
-        if(type==='Picked-up OT'){const x=rowHours*num('baseRate')*num('otMult');rowGross+=x;otGross+=x}
-        else if(type==='Leave')rowGross+=rowHours*num('baseRate');
-        else rowGross+=sp.wd*num('baseRate')*num('wdMult')+sp.sat*num('baseRate')*num('satMult')+sp.sun*num('baseRate')*num('sunMult');
-        if(type!=='Leave'){
-          if(data.allowance==='Morn/Aft')rowGross+=rowHours*num('maRate');
-          if(data.allowance==='Night')rowGross+=rowHours*num('nightRate');
-          if(code==='AA1'||row.querySelector('.hd').checked)rowGross+=rowHours*num('hdRate');
-        }
-      }
-      row.querySelector('.time-label').textContent=timeText;
-      row.querySelector('.row-gross').textContent=money(rowGross);
-      gross+=rowGross;dayGross+=rowGross;hours+=rowHours;
-    });
-    day.querySelector('.day-total').textContent=money(dayGross);
-  });
-  const taxable=Math.max(0,gross-num('lease')-num('gesb')-num('otherPre'));
-  const tax=taxable>0?Math.max(0,Math.round(annualTax(taxable*26)/26+num('calibration'))):0;
-  const net=taxable-tax-num('postTax');
-  const retain=gross>0?Math.max(0,net/gross):0;
-  $('#gross').textContent=money(gross);$('#taxable').textContent=money(taxable);$('#tax').textContent=money(tax);
-  $('#hours').textContent=hours.toFixed(1);$('#net').textContent=money(net);$('#netHourly').textContent=money(hours?net/hours:0);
-  $('#otGross').textContent=money(otGross);$('#otNet').textContent=money(otGross*retain);
-}
-const state=savedState();
-$('#startDate').value=state?.startDate||new Date().toISOString().slice(0,10);
-Object.entries(state?.settings||{}).forEach(([k,v])=>{if($('#'+k))$('#'+k).value=v});
-build(state);
-$('#startDate').addEventListener('change',()=>build(currentState()));
-['baseRate','wdMult','satMult','sunMult','otMult','hdRate','maRate','nightRate','lease','gesb','otherPre','postTax','calibration'].forEach(id=>$('#'+id).addEventListener('input',calculate));
-$('#save').onclick=()=>{localStorage.setItem('ptaPayV3',JSON.stringify(currentState()));toast('Roster saved on this device')};
-$('#reset').onclick=()=>{if(confirm('Clear the saved roster and settings?')){localStorage.removeItem('ptaPayV3');location.reload()}};
-$('#share').onclick=async()=>{const text=`Estimated take-home: ${$('#net').textContent}\nGross: ${$('#gross').textContent}\nWorked hours: ${$('#hours').textContent}`;if(navigator.share)await navigator.share({title:'Roster pay estimate',text});else{await navigator.clipboard.writeText(text);toast('Summary copied')}};
+function rowHTML(){return `<div class="shift-row"><div class="fields"><label>Shift<select class="code">${opts()}</select></label><label>Type<select class="type"><option>Rostered</option><option>Picked-up OT</option><option>Leave</option><option>Off</option></select></label><label>Other gross<input class="other" type="number" step=".01" value="0"></label><label class="check"><input class="hd" type="checkbox"><span>Higher duties</span></label></div><div class="checks"><label class="check"><input class="vehicle" type="checkbox"><span>Vehicle allowance</span></label><label class="check"><input class="transfer" type="checkbox"><span>Transfer allowance</span></label></div><details><summary>Override shift time</summary><div class="grid2"><label>Start<input class="cs" type="time"></label><label>Finish<input class="cf" type="time"></label></div></details><div class="row-meta"><span class="time-label">Off</span><span><b class="row-gross">$0</b> <button class="remove" type="button">Remove</button></span></div></div>`}
+function applyRow(el,row){el.querySelector('.code').value=row.code||'';el.querySelector('.type').value=row.type||'Rostered';el.querySelector('.other').value=row.other||0;el.querySelector('.hd').checked=!!row.hd;el.querySelector('.vehicle').checked=!!row.vehicle;el.querySelector('.transfer').checked=!!row.transfer;el.querySelector('.cs').value=row.cs||'';el.querySelector('.cf').value=row.cf||''}
+function wireRow(el){el.querySelectorAll('input,select').forEach(x=>x.addEventListener('input',()=>{calculate();simulate()}));el.querySelector('.remove').onclick=()=>{const day=el.closest('.day-card');if(day.querySelectorAll('.shift-row').length===1)applyRow(el,defaultRow());else el.remove();calculate();simulate()}}
+function addRow(day,row=defaultRow()){const holder=day.querySelector('.rows');holder.insertAdjacentHTML('beforeend',rowHTML());const el=holder.lastElementChild;applyRow(el,row);wireRow(el);calculate()}
+function build(state){const wrap=$('#roster');wrap.innerHTML='';const start=parseDate($('#startDate').value);for(let i=0;i<14;i++){const d=new Date(start);d.setDate(start.getDate()+i);const day=document.createElement('section');day.className='day-card';day.innerHTML=`<div class="day-head"><div><strong>${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</strong><small>Day ${i+1}</small></div><span class="day-total">$0</span></div><div class="rows"></div><button type="button" class="add-shift">+ Add another shift</button>`;wrap.appendChild(day);const rows=state?.days?.[i]?.rows?.length?state.days[i].rows:[defaultRow()];rows.forEach(r=>addRow(day,r));day.querySelector('.add-shift').onclick=()=>addRow(day)}calculate();simulate()}
+function getTimes(data,date,row){let st=row.querySelector('.cs').value,fn=row.querySelector('.cf').value;if((!st||!fn)&&data)[st,fn]=data.times[group(date.getDay())]||[null,null];return [st,fn]}
+function calcRow(date,row){const code=row.querySelector('.code').value,type=row.querySelector('.type').value,data=SHIFT_DATA[code];let other=parseFloat(row.querySelector('.other').value)||0;let out={gross:other,hours:0,weekday:0,sat:0,sun:0,ot:0,allow:0,hd:0,extras:0,other,time:'Off'};const [st,fn]=getTimes(data,date,row);if(data&&st&&fn&&type!=='Off'){const sp=splitHours(date,st,fn);out.hours=sp.total;out.time=`${st}–${fn} • ${sp.total.toFixed(2)}h`;if(type==='Picked-up OT'){out.ot=sp.total*num('baseRate')*num('otMult');out.gross+=out.ot}else if(type==='Leave'){out.weekday=sp.total*num('baseRate');out.gross+=out.weekday}else{out.weekday=sp.wd*num('baseRate')*num('wdMult');out.sat=sp.sat*num('baseRate')*num('satMult');out.sun=sp.sun*num('baseRate')*num('sunMult');out.gross+=out.weekday+out.sat+out.sun}if(type!=='Leave'){if(data.allowance==='Morn/Aft')out.allow=sp.total*num('maRate');if(data.allowance==='Night')out.allow=sp.total*num('nightRate');if(code==='AA1'||row.querySelector('.hd').checked)out.hd=sp.total*num('hdRate');if(row.querySelector('.vehicle').checked)out.extras+=num('vehicleRate');if(row.querySelector('.transfer').checked)out.extras+=num('transferRate');out.gross+=out.allow+out.hd+out.extras}}return out}
+function calculate(){const start=parseDate($('#startDate').value);let totals={gross:0,hours:0,weekday:0,sat:0,sun:0,ot:0,allow:0,hd:0,extras:0,other:0};$$('.day-card').forEach((day,i)=>{const date=new Date(start);date.setDate(start.getDate()+i);let dg=0;day.querySelectorAll('.shift-row').forEach(row=>{const r=calcRow(date,row);Object.keys(totals).forEach(k=>totals[k]+=r[k]||0);dg+=r.gross;row.querySelector('.time-label').textContent=r.time;row.querySelector('.row-gross').textContent=money(r.gross)});day.querySelector('.day-total').textContent=money(dg)});const taxable=Math.max(0,totals.gross-num('lease')-num('gesb')-num('otherPre'));const tax=taxable>0?Math.max(0,Math.round(annualTax(taxable*26)/26+num('calibration'))):0;const net=taxable-tax-num('postTax');$('#gross').textContent=money(totals.gross);$('#taxable').textContent=money(taxable);$('#tax').textContent=money(tax);$('#hours').textContent=totals.hours.toFixed(1);$('#net').textContent=money(net);$('#netHourly').textContent=money(totals.hours?net/totals.hours:0);$('#bdWeekday').textContent=money(totals.weekday);$('#bdSat').textContent=money(totals.sat);$('#bdSun').textContent=money(totals.sun);$('#bdOT').textContent=money(totals.ot);$('#bdAllow').textContent=money(totals.allow);$('#bdHD').textContent=money(totals.hd);$('#bdExtras').textContent=money(totals.extras);$('#bdOther').textContent=money(totals.other);return {gross:totals.gross,net}}
+function simulate(){const d=parseDate($('#simDate').value||$('#startDate').value),code=$('#simShift').value,type=$('#simType').value,data=SHIFT_DATA[code];if(!data){$('#simGross').textContent=money(0);$('#simNet').textContent=money(0);$('#simDetail').textContent='Select a shift';return}const fake=document.createElement('div');fake.innerHTML=rowHTML();const row=fake.firstElementChild;row.querySelector('.code').value=code;row.querySelector('.type').value=type;const r=calcRow(d,row);const base=calculate();const newGross=base.gross+r.gross;const taxable=Math.max(0,newGross-num('lease')-num('gesb')-num('otherPre'));const newTax=taxable>0?Math.max(0,Math.round(annualTax(taxable*26)/26+num('calibration'))):0;const newNet=taxable-newTax-num('postTax');const extraNet=newNet-base.net;$('#simGross').textContent=money(r.gross);$('#simNet').textContent=money(extraNet);$('#simDetail').textContent=`${r.time} • ${data.name}`}
+function renderSaved(){const list=JSON.parse(localStorage.getItem('ptaSavedFortnights')||'[]'),wrap=$('#savedList');wrap.innerHTML='';if(!list.length){wrap.innerHTML='<div style="font-size:13px;color:#667">No saved fortnights yet.</div>';return}list.forEach((item,i)=>{const el=document.createElement('div');el.className='saved-item';el.innerHTML=`<div><b>${item.name}</b><div style="font-size:12px;color:#667">${item.state.startDate}</div></div><div><button class="load">Load</button> <button class="delete">Delete</button></div>`;el.querySelector('.load').onclick=()=>{localStorage.setItem('ptaPayV4',JSON.stringify(item.state));location.reload()};el.querySelector('.delete').onclick=()=>{list.splice(i,1);localStorage.setItem('ptaSavedFortnights',JSON.stringify(list));renderSaved()};wrap.appendChild(el)})}
+const saved=JSON.parse(localStorage.getItem('ptaPayV4')||'null');$('#startDate').value=saved?.startDate||new Date().toISOString().slice(0,10);$('#simDate').value=$('#startDate').value;ids.forEach(id=>{if(saved?.settings?.[id]!=null)$('#'+id).value=saved.settings[id]});$('#simShift').innerHTML=opts();build(saved);renderSaved();
+$('#startDate').addEventListener('change',()=>{$('#simDate').value=$('#startDate').value;build(currentState())});ids.forEach(id=>$('#'+id).addEventListener('input',()=>{calculate();simulate()}));['simDate','simShift','simType'].forEach(id=>$('#'+id).addEventListener('input',simulate));
+$('#save').onclick=()=>{localStorage.setItem('ptaPayV4',JSON.stringify(currentState()));toast('Roster saved on this device')};
+$('#saveSnapshot').onclick=()=>{const name=$('#saveName').value.trim()||$('#startDate').value;const list=JSON.parse(localStorage.getItem('ptaSavedFortnights')||'[]');list.unshift({name,state:currentState()});localStorage.setItem('ptaSavedFortnights',JSON.stringify(list.slice(0,20)));$('#saveName').value='';renderSaved();toast('Fortnight saved')};
+$('#reset').onclick=()=>{if(confirm('Clear the current roster and settings?')){localStorage.removeItem('ptaPayV4');location.reload()}};
+$('#share').onclick=async()=>{const c=calculate();const text=`Estimated take-home: ${money(c.net)}\nGross: ${money(c.gross)}\nWorked hours: ${$('#hours').textContent}`;if(navigator.share)await navigator.share({title:'Roster pay estimate',text});else{await navigator.clipboard.writeText(text);toast('Summary copied')}};
 </script>
 </body>
 </html>
