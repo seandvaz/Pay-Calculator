@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#123a5a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>PTA Pay Calculator</title>
+<link rel="stylesheet" href="styles.css?v=6.7">
+<script>
+(async function(){
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    if('caches' in window){
+      const keys=await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+    }
+  }catch(e){console.warn('Cache cleanup skipped',e)}
+})();
+</script>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+  <div>
+    <h1>PTA Pay Calculator</h1>
+    <p>Financial-year dashboard, compact roster and pay history</p><span class="version-badge"><main>
+<section id="home" class="screen active">
+  <div class="card">
+    <div class="screen-heading">
+      <div><span class="eyebrow">Financial year dashboard</span><h2 id="fyLabel">—</h2></div>
+      <select id="fySelect" class="compact-select"></select>
+    </div>
+    <div class="dashboard-grid">
+      <div class="dash-metric"><span>Gross saved</span><strong id="fyGross">$0.00</strong></div>
+      <div class="dash-metric"><span>Net saved</span><strong id="fyNet">$0.00</strong></div>
+      <div class="dash-metric"><span>Total hours</span><strong id="fyHours">0.0</strong></div>
+      <div class="dash-metric"><span>Average net / hour</span><strong id="fyNetHourly">$0.00</strong></div>
+      <div class="dash-metric"><span>Annual leave pay</span><strong id="fyAnnualLeave">$0.00</strong></div>
+      <div class="dash-metric"><span>Additional hours</span><strong id="fyAdditional">$0.00</strong></div>
+      <div class="dash-metric"><span>Allowances & HD</span><strong id="fyExtras">$0.00</strong></div>
+      <div class="dash-metric"><span>Saved cycles</span><strong id="fyCycles">0</strong></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="screen-heading">
+      <div><span class="eyebrow">Latest saved pay</span><h2 id="latestRange">No saved cycles</h2></div>
+      <strong id="latestNet" class="detail-estimate">$0.00</strong>
+    </div>
+    <p id="latestStatus" class="helper">Save a roster to begin tracking your financial year.</p>
+  </div>
+
+  <div class="card">
+    <div class="action-grid">
+      <button class="primary" data-go="roster">Continue current roster</button>
+      <button id="homeStartNext" class="secondary">Start next pay cycle</button>
+      <button class="secondary" data-go="history">View history</button>
+      <button class="ghost" data-go="settings">Settings</button>
+    </div>
+  </div>
+</section>
+
+<section id="roster" class="screen">
+  <div class="card">
+    <div class="screen-heading">
+      <div><span class="eyebrow">Roster</span><h2 id="rosterRange">Fortnight</h2></div>
+      <button id="clearRoster" class="ghost compact-button">Clear shifts</button>
+    </div>
+    <div class="form-grid two">
+      <label>Fortnight start<input id="startDate" type="date"></label>
+      <label>Base hourly rate<input id="baseRate" type="number" step="0.01"></label>
+    </div>
+  </div>
+
+  <div id="dayList" class="day-list"></div>
+
+  <div class="card roster-footer">
+    <div class="compact-summary">
+      <div><span>Gross</span><strong id="rosterGross">$0.00</strong></div>
+      <div><span>Tax</span><strong id="rosterTax">$0.00</strong></div>
+      <div class="wide"><span>Estimated deposit</span><strong id="rosterNet">$0.00</strong></div>
+      <div><span>Hours</span><strong id="rosterHours">0.0</strong></div>
+    </div>
+    <div class="action-grid">
+      <button id="saveRosterCycle" class="primary">Save Pay Cycle</button>
+      <button id="startNextCycle" class="secondary">Start Next Pay Cycle</button>
+    </div>
+    <button id="toggleRosterBreakdown" class="ghost full-width">Show calculation breakdown</button>
+    <div id="rosterBreakdown" class="breakdown-panel" hidden>
+      <div><span>Worked shifts</span><strong id="workedPay">$0.00</strong></div>
+      <div><span>Annual leave</span><strong id="annualLeavePay">$0.00</strong></div>
+      <div><span>Sick leave</span><strong id="sickLeavePay">$0.00</strong></div>
+      <div><span>Long service leave</span><strong id="lslPay">$0.00</strong></div>
+      <div><span>Leave without pay</span><strong id="lwopPay">$0.00</strong></div>
+      <div><span>Allowances & higher duties</span><strong id="extrasPay">$0.00</strong></div>
+      <div><span>Additional hours</span><strong id="additionalHoursPay">$0.00</strong></div>
+      <div><span>Taxable pay</span><strong id="taxable">$0.00</strong></div>
+      <div><span>Net per worked hour</span><strong id="netHourly">$0.00</strong></div>
+    </div>
+  </div>
+</section>
+
+<section id="history" class="screen">
+  <div class="card">
+    <div class="screen-heading"><div><span class="eyebrow">History</span><h2>Saved pay cycles</h2></div></div>
+    <p class="helper">Tap a date range to reveal the details.</p>
+    <div id="historyGroups" class="history-groups"></div>
+  </div>
+</section>
+
+<section id="historyDetail" class="screen">
+  <button id="backHistory" class="ghost back-button">← Back to history</button>
+  <div class="card">
+    <div class="saved-detail-head">
+      <div><span class="eyebrow">Saved cycle</span><h2 id="detailTitle">Pay cycle</h2><span id="detailStatusPill" class="status-pill current">Current</span></div>
+      <strong id="detailEstimate" class="detail-estimate">$0.00</strong>
+    </div>
+    <div class="form-grid two">
+      <label>Status<select id="detailStatus"><option value="current">Current</option><option value="awaiting">Awaiting pay</option><option value="paid">Paid</option></select></label>
+      <label>Actual bank deposit<input id="detailActualInput" type="number" step="0.01"></label>
+      <label class="wide">Notes<textarea id="detailNotes" rows="4"></textarea></label>
+    </div>
+    <div class="compact-summary detail-summary">
+      <div><span>Estimated</span><strong id="detailEstimated">$0.00</strong></div>
+      <div><span>Actual</span><strong id="detailActual">—</strong></div>
+      <div class="wide"><span>Difference</span><strong id="detailDifference">—</strong></div>
+      <div><span>Gross</span><strong id="detailGross">$0.00</strong></div>
+      <div><span>Hours</span><strong id="detailHours">0.0</strong></div>
+      <div class="wide"><span>Expected payday</span><strong id="detailPayday">—</strong></div>
+    </div>
+    <div class="action-grid">
+      <button id="editSavedCycle" class="primary">Open roster and edit</button>
+      <button id="saveSavedDetails" class="secondary">Save details</button>
+      <button id="deleteSavedCycle" class="danger">Delete cycle</button>
+    </div>
+  </div>
+</section>
+
+<section id="settings" class="screen">
+  <div class="card">
+    <div class="screen-heading"><div><span class="eyebrow">Settings</span><h2>Rates and deductions</h2></div></div>
+    <details open><summary>Agreement and classification</summary><div class="form-grid settings-grid">
+      <label>Agreement<select id="agreementId"></select></label>
+      <label>Classification<select id="classificationId"></select></label>
+      <label>Classification rate<input id="classificationRate" type="number" step="0.01"></label>
+    </div></details>
+    <details><summary>Rates</summary><div class="form-grid settings-grid">
+      <label>Weekday multiplier<input id="wdMult" type="number" step="0.01"></label>
+      <label>Saturday multiplier<input id="satMult" type="number" step="0.01"></label>
+      <label>Sunday multiplier<input id="sunMult" type="number" step="0.01"></label>
+      <label>Picked-up OT multiplier<input id="otMult" type="number" step="0.01"></label>
+      <label>Additional hours multiplier<input id="addHoursMult" type="number" step="0.01"></label>
+    </div></details>
+    <details><summary>Allowances and leave</summary><div class="form-grid settings-grid">
+      <label>Higher duties / hr<input id="hdRate" type="number" step="0.01"></label>
+      <label>Morn/afternoon / hr<input id="maRate" type="number" step="0.01"></label>
+      <label>Night allowance / hr<input id="nightRate" type="number" step="0.01"></label>
+      <label>Annual leave loading rate / hr<input id="annualLeaveLoadingRate" type="number" step="0.01"></label>
+    </div></details>
+    <details><summary>Deductions and tax</summary><div class="form-grid settings-grid">
+      <label>Novated lease pre-tax<input id="lease" type="number" step="0.01"></label>
+      <label>GESB pre-tax<input id="gesb" type="number" step="0.01"></label>
+      <label>Post-tax deductions<input id="postTax" type="number" step="0.01"></label>
+      <label>Extra tax withheld / fortnight<input id="extraTax" type="number" step="0.01"></label>
+    </div></details>
+    <div class="action-grid">
+      <button id="saveCurrent" class="primary">Save settings</button>
+      <button id="resetApp" class="danger">Reset app data</button>
+    </div>
+  </div>
+</section>
+</main>
+    </div>
+  </div>
+</section>
+</main>
+
+<nav class="bottom-nav">
+  <button class="nav-button active" data-go="home">Home</button>
+  <button class="nav-button" data-go="roster">Roster</button>
+  <button class="nav-button" data-go="history">History</button>
+  <button class="nav-button" data-go="settings">Settings</button>
+</nav>
+<div id="toast" class="toast"></div>
+</div>
+
+<script src="agreementData.js?v=6.7"></script>
+<script src="shiftData.js?v=6.7"></script>
+<script src="payCalculator.js?v=6.7"></script>
+<script src="storage.js?v=6.7"></script>
+<script src="app.js?v=6.7"></script>
+</body>
+</html>
