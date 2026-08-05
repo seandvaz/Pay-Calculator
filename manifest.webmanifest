@@ -1,9 +1,0 @@
-{
-  "name": "Roster Pay Calculator",
-  "short_name": "Pay Calc",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#f3f5f7",
-  "theme_color": "#102a43",
-  "description": "Responsive fortnight roster and take-home pay calculator"
-}
