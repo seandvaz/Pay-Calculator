@@ -1,0 +1,7 @@
+ShiftMate v2.2.0 — LIVE RELEASE
+Promoted from the approved TEST v2.1.8 repository baseline on 25 August 2026.
+
+Includes the approved TEST functionality plus the final Leave Documentation
+Cancel-button visual consistency correction.
+
+Regular Transit standby/projection logic remains unchanged pending further roster data.
