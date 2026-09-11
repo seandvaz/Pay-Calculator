@@ -1642,7 +1642,18 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
           offlineSelect.value=row.offlineShiftCode;
         }
       }
-      card.querySelector('.shift-code').onchange=()=>{
+      const shiftCodeSelect=card.querySelector('.shift-code');
+      const syncSelectedShiftVisual=()=>{
+        // Some installed mobile browsers report a select value before they emit
+        // its change event. Keep the roster controls in step with that value;
+        // the change handler below remains responsible for saving and calculating.
+        if(shiftCodeSelect.value===OFFLINE_CODE)return;
+        delete card.dataset.effectiveShiftCode;
+        updateRosterCardState(card);
+        requestAnimationFrame(()=>{if(card.isConnected)updateRosterCardState(card)});
+      };
+      shiftCodeSelect.oninput=syncSelectedShiftVisual;
+      shiftCodeSelect.onchange=()=>{
         const main=card.querySelector('.shift-code').value;
         const offlineWrap=card.querySelector('.offline-shift-wrap');
         const offlineSelect=card.querySelector('.offline-shift-code');
@@ -2173,7 +2184,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
     saveCurrent();
     const payload={
       app:'PTA ShiftMate',
-      version:'3.1.1-roster-state-fix',
+      version:'3.1.2-roster-input-fix',
       exportedAt:new Date().toISOString(),
       current:AppStorage.loadCurrent(),
       cycles:AppStorage.loadCycles()
