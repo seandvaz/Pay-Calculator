@@ -1696,6 +1696,16 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
       // full update until the picker has settled, so rebuilding its options
       // cannot cause a second handler to read an empty value.
       let normalShiftUpdatePending=false;
+      const syncSelectedShiftVisual=()=>{
+        // Restore the immediate visual acknowledgement used by the known-good
+        // LIVE version. The full change handler below still supplies defaults,
+        // saves the row and recalculates once the native picker has settled.
+        if(shiftCodeSelect.value===OFFLINE_CODE)return;
+        delete card.dataset.effectiveShiftCode;
+        syncCardShiftDisplay(card);
+        updateRosterCardState(card);
+        requestAnimationFrame(()=>{if(card.isConnected)updateRosterCardState(card)});
+      };
       const scheduleNormalShiftUpdate=()=>{
         if(normalShiftUpdatePending)return;
         normalShiftUpdatePending=true;
@@ -1704,7 +1714,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
           if(card.isConnected)handleShiftCodeChange();
         });
       };
-      shiftCodeSelect.oninput=scheduleNormalShiftUpdate;
+      shiftCodeSelect.oninput=syncSelectedShiftVisual;
       shiftCodeSelect.onchange=scheduleNormalShiftUpdate;
       const offlineShiftSelect=card.querySelector('.offline-shift-code');
       const handleOfflineShiftChange=e=>{
@@ -2222,7 +2232,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
     saveCurrent();
     const payload={
       app:'PTA ShiftMate',
-      version:'3.1.5-selection-events-fix',
+      version:'3.1.6-immediate-card-state-fix',
       exportedAt:new Date().toISOString(),
       current:AppStorage.loadCurrent(),
       cycles:AppStorage.loadCycles()
