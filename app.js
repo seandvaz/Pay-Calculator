@@ -1692,8 +1692,20 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
         recalculate();
         requestAnimationFrame(()=>{if(card.isConnected)updateRosterCardState(card)});
       };
-      shiftCodeSelect.oninput=handleShiftCodeChange;
-      shiftCodeSelect.onchange=handleShiftCodeChange;
+      // Browsers can fire both input and change for one selection. Defer the
+      // full update until the picker has settled, so rebuilding its options
+      // cannot cause a second handler to read an empty value.
+      let normalShiftUpdatePending=false;
+      const scheduleNormalShiftUpdate=()=>{
+        if(normalShiftUpdatePending)return;
+        normalShiftUpdatePending=true;
+        requestAnimationFrame(()=>{
+          normalShiftUpdatePending=false;
+          if(card.isConnected)handleShiftCodeChange();
+        });
+      };
+      shiftCodeSelect.oninput=scheduleNormalShiftUpdate;
+      shiftCodeSelect.onchange=scheduleNormalShiftUpdate;
       const offlineShiftSelect=card.querySelector('.offline-shift-code');
       const handleOfflineShiftChange=e=>{
         const code=e.target.value;
@@ -2210,7 +2222,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
     saveCurrent();
     const payload={
       app:'PTA ShiftMate',
-      version:'3.1.4-offline-selection-fix',
+      version:'3.1.5-selection-events-fix',
       exportedAt:new Date().toISOString(),
       current:AppStorage.loadCurrent(),
       cycles:AppStorage.loadCycles()
