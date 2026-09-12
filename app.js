@@ -1465,7 +1465,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
     const code=effectiveShiftCode(card);
     const rowType=card.querySelector('.shift-type')?.value||'';
     const isOvertime=rowType==='Picked-up OT'||rowType==='Overtime';
-    const hasRosterEntry=Boolean(code);
+    const hasRosterEntry=Boolean(code)&&rowType!=='Off';
     card.dataset.entered=String(hasRosterEntry);
     card.classList.toggle('roster-unentered',!hasRosterEntry);
     card.classList.toggle('roster-entered',hasRosterEntry&&!isOvertime);
@@ -1696,25 +1696,38 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
       // full update until the picker has settled, so rebuilding its options
       // cannot cause a second handler to read an empty value.
       let normalShiftUpdatePending=false;
-      const syncSelectedShiftVisual=()=>{
-        // Restore the immediate visual acknowledgement used by the known-good
-        // LIVE version. The full change handler below still supplies defaults,
-        // saves the row and recalculates once the native picker has settled.
-        if(shiftCodeSelect.value===OFFLINE_CODE)return;
-        delete card.dataset.effectiveShiftCode;
-        syncCardShiftDisplay(card);
-        updateRosterCardState(card);
-        requestAnimationFrame(()=>{if(card.isConnected)updateRosterCardState(card)});
+      const reconcileNormalCard=()=>{
+        if(!card.isConnected)return;
+        const code=card.querySelector('.shift-code')?.value||'';
+        if(!code||code===OFFLINE_CODE||card.querySelector('.shift-type')?.value==='Off'){
+          updateRosterCardState(card);
+          return;
+        }
+        const isOvertime=card.querySelector('.shift-type')?.value==='Picked-up OT';
+        card.dataset.entered='true';
+        card.classList.remove('roster-unentered','shift-off');
+        card.classList.toggle('roster-entered',!isOvertime);
+        card.classList.toggle('roster-overtime',isOvertime);
+        const start=card.querySelector('.start-time')?.value||'';
+        const finish=card.querySelector('.finish-time')?.value||'';
+        const time=card.querySelector('.shift-time');
+        if(time)time.dataset.compactTime=start&&finish?`${start}–${finish}`:'';
+        const hour=Number(start.split(':')[0]);
+        card.classList.toggle('shift-morn',Number.isFinite(hour)&&hour<12);
+        card.classList.toggle('shift-arvo',Number.isFinite(hour)&&hour>=12);
       };
       const scheduleNormalShiftUpdate=()=>{
         if(normalShiftUpdatePending)return;
         normalShiftUpdatePending=true;
         requestAnimationFrame(()=>{
           normalShiftUpdatePending=false;
-          if(card.isConnected)handleShiftCodeChange();
+          if(!card.isConnected)return;
+          handleShiftCodeChange();
+          requestAnimationFrame(reconcileNormalCard);
+          setTimeout(reconcileNormalCard,120);
         });
       };
-      shiftCodeSelect.oninput=syncSelectedShiftVisual;
+      shiftCodeSelect.oninput=scheduleNormalShiftUpdate;
       shiftCodeSelect.onchange=scheduleNormalShiftUpdate;
       const offlineShiftSelect=card.querySelector('.offline-shift-code');
       const handleOfflineShiftChange=e=>{
@@ -1804,7 +1817,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
       const considerBookOff=()=>{const diff=bookOffDifference(card.querySelector('.shift-code').value,date,card.querySelector('.start-time').value,card.querySelector('.finish-time').value);if(diff)openBookOffChoice(card,date)};
       card.querySelector('.start-time').onchange=considerBookOff;
       card.querySelector('.finish-time').onchange=considerBookOff;
-      refreshShiftOptions(card,date,row.code||'');
+      refreshShiftOptions(card,date,row.offlineShiftCode?OFFLINE_CODE:(row.code||''));
       applyShiftDefaults(card,date,false);updateRosterCardState(card);
       if(row.code&&!SHIFT_DATA[row.code]?.leaveType){
         const variation=rosterVariation(row,date);
@@ -2232,7 +2245,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
     saveCurrent();
     const payload={
       app:'PTA ShiftMate',
-      version:'3.1.6-immediate-card-state-fix',
+      version:'3.1.7-roster-parity-fix',
       exportedAt:new Date().toISOString(),
       current:AppStorage.loadCurrent(),
       cycles:AppStorage.loadCycles()
