@@ -1325,6 +1325,11 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
     const main=card.querySelector('.shift-code')?.value||'';
     return main===OFFLINE_CODE?(card.querySelector('.offline-shift-code')?.value||card.dataset.effectiveShiftCode||''):main;
   };
+  const syncCardShiftDisplay=card=>{
+    const code=effectiveShiftCode(card);
+    const face=card.querySelector('.shift-face-code');
+    if(face)face.textContent=code?(/^\d+$/.test(code)?`T${code}`:code):'OFF';
+  };
 
   function refreshShiftOptions(card,date,selected=''){
     const line=card.querySelector('.worked-line').value||current.settings.homeLine;
@@ -2245,7 +2250,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
     saveCurrent();
     const payload={
       app:'PTA ShiftMate',
-      version:'3.1.7-roster-parity-fix',
+      version:'3.1.8-card-display-fix',
       exportedAt:new Date().toISOString(),
       current:AppStorage.loadCurrent(),
       cycles:AppStorage.loadCycles()
