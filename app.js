@@ -1323,14 +1323,15 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
 
   const effectiveShiftCode=card=>{
     const main=card.querySelector('.shift-code')?.value||'';
-    return main===OFFLINE_CODE?(card.dataset.effectiveShiftCode||card.querySelector('.offline-shift-code')?.value||''):main;
+    return main===OFFLINE_CODE?(card.querySelector('.offline-shift-code')?.value||card.dataset.effectiveShiftCode||''):main;
   };
 
   function refreshShiftOptions(card,date,selected=''){
     const line=card.querySelector('.worked-line').value||current.settings.homeLine;
     const select=card.querySelector('.shift-code');
 
-    const validSelected=selected&&SHIFT_DATA[selected]&&(
+    const isSavedOffline=selected===OFFLINE_CODE;
+    const validSelected=!isSavedOffline&&selected&&SHIFT_DATA[selected]&&(
       SHIFT_DATA[selected].line==='LEAVE'||
       (selected==='SA'&&(()=>{
         const times=SHIFT_DATA[selected].times?.[PayCalc.dayGroup(date.getDay())]||['',''];
@@ -1342,8 +1343,8 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
       })())
     );
 
-    select.innerHTML=opts(validSelected?selected:'',line,date,true);
-    select.value=validSelected?selected:'';
+    select.innerHTML=opts(isSavedOffline?OFFLINE_CODE:(validSelected?selected:''),line,date,true);
+    select.value=isSavedOffline?OFFLINE_CODE:(validSelected?selected:'');
 
     const isOffline=line!==current.settings.homeLine;
     card.dataset.offline=String(isOffline);
@@ -2209,7 +2210,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
     saveCurrent();
     const payload={
       app:'PTA ShiftMate',
-      version:'3.1.3-offline-shift-fix',
+      version:'3.1.4-offline-selection-fix',
       exportedAt:new Date().toISOString(),
       current:AppStorage.loadCurrent(),
       cycles:AppStorage.loadCycles()
