@@ -1505,6 +1505,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
       else parent.appendChild(details);
     }
     card?.classList.remove('details-portal-open');
+    card?.dispatchEvent(new Event('shift-details-closed'));
     if(portal)portal.hidden=true;
     document.body.classList.remove('modal-open');
     activeShiftDetailsPortal=null;
@@ -1628,11 +1629,15 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
       </div>`;
       wrap.appendChild(card);
 
-      const closeRosterDetails=()=>card.classList.remove('open');
+      let settleOfflineShiftSelection=()=>{};
+      const closeRosterDetails=()=>{
+        card.classList.remove('open');
+        settleOfflineShiftSelection();
+      };
       card.querySelector('.details-button').onclick=()=>openShiftDetailsPortal(card);
       card.querySelector('.roster-detail-close').onclick=closeRosterDetails;
       card.querySelector('.roster-detail-backdrop').onclick=closeRosterDetails;
-      card.querySelector('.ot-toggle').onclick=()=>{const type=card.querySelector('.shift-type'),btn=card.querySelector('.ot-toggle');if(!card.querySelector('.shift-code').value){toast('Select a shift first');return}const on=type.value==='Picked-up OT';type.value=on?'Rostered':'Picked-up OT';btn.classList.toggle('active',!on);card.dataset.entered='true';updateRosterCardState(card);syncCurrentFromUI();recalculate()};
+      card.querySelector('.ot-toggle').onclick=()=>{const type=card.querySelector('.shift-type'),btn=card.querySelector('.ot-toggle');if(!effectiveShiftCode(card)){toast('Select a shift first');return}const on=type.value==='Picked-up OT';type.value=on?'Rostered':'Picked-up OT';btn.classList.toggle('active',!on);card.dataset.entered='true';updateRosterCardState(card);syncCurrentFromUI();recalculate()};
       const offlineWrap=card.querySelector('.offline-shift-wrap'),offlineSelect=card.querySelector('.offline-shift-code');
       if(row.offlineShiftCode){
         card.dataset.effectiveShiftCode=row.offlineShiftCode;
@@ -1643,21 +1648,13 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
         }
       }
       const shiftCodeSelect=card.querySelector('.shift-code');
-      const syncSelectedShiftVisual=()=>{
-        // Some installed mobile browsers report a select value before they emit
-        // its change event. Keep the roster controls in step with that value;
-        // the change handler below remains responsible for saving and calculating.
-        if(shiftCodeSelect.value===OFFLINE_CODE)return;
-        delete card.dataset.effectiveShiftCode;
-        updateRosterCardState(card);
-        requestAnimationFrame(()=>{if(card.isConnected)updateRosterCardState(card)});
-      };
-      shiftCodeSelect.oninput=syncSelectedShiftVisual;
-      shiftCodeSelect.onchange=()=>{
+      const handleShiftCodeChange=()=>{
         const main=card.querySelector('.shift-code').value;
         const offlineWrap=card.querySelector('.offline-shift-wrap');
         const offlineSelect=card.querySelector('.offline-shift-code');
         if(main===OFFLINE_CODE){
+          const type=card.querySelector('.shift-type');
+          if(type&&type.value==='Off')type.value='Rostered';
           card.dataset.offline='true';
           card.dataset.entered='false'; // no effective shift until a real code is chosen
           if(offlineWrap){
@@ -1694,7 +1691,10 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
         recalculate();
         requestAnimationFrame(()=>{if(card.isConnected)updateRosterCardState(card)});
       };
-      card.querySelector('.offline-shift-code').onchange=e=>{
+      shiftCodeSelect.oninput=handleShiftCodeChange;
+      shiftCodeSelect.onchange=handleShiftCodeChange;
+      const offlineShiftSelect=card.querySelector('.offline-shift-code');
+      const handleOfflineShiftChange=e=>{
         const code=e.target.value;
         const data=SHIFT_DATA[code];
         if(!data)return;
@@ -1726,6 +1726,31 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
         recalculate();
         syncCardShiftDisplay(card);
       };
+      const reconcileOfflineCard=()=>{
+        if(!card.isConnected||!SHIFT_DATA[offlineShiftSelect.value])return;
+        card.dataset.effectiveShiftCode=offlineShiftSelect.value;
+        card.dataset.entered='true';
+        const type=card.querySelector('.shift-type')?.value||'';
+        const isOvertime=type==='Picked-up OT'||type==='Overtime';
+        card.classList.remove('roster-unentered');
+        card.classList.toggle('roster-entered',!isOvertime);
+        card.classList.toggle('roster-overtime',isOvertime);
+        updateRosterCardState(card);
+        syncCardShiftDisplay(card);
+        syncCurrentFromUI();
+        recalculate();
+      };
+      settleOfflineShiftSelection=()=>{
+        const code=offlineShiftSelect.value;
+        if(!SHIFT_DATA[code])return;
+        handleOfflineShiftChange({target:offlineShiftSelect});
+        requestAnimationFrame(reconcileOfflineCard);
+        setTimeout(reconcileOfflineCard,120);
+      };
+      offlineShiftSelect.oninput=settleOfflineShiftSelection;
+      offlineShiftSelect.onchange=settleOfflineShiftSelection;
+      offlineShiftSelect.onblur=settleOfflineShiftSelection;
+      card.addEventListener('shift-details-closed',settleOfflineShiftSelection);
       card.querySelector('.worked-line').onchange=e=>{
         card.dataset.entered='true';
         card.dataset.workedRosterLine=e.target.value;
@@ -2184,7 +2209,7 @@ const perthShiftLabels={PN:'Perth Assist Arvo',PA:'Perth Afternoon',PD:'Perth As
     saveCurrent();
     const payload={
       app:'PTA ShiftMate',
-      version:'3.1.2-roster-input-fix',
+      version:'3.1.3-offline-shift-fix',
       exportedAt:new Date().toISOString(),
       current:AppStorage.loadCurrent(),
       cycles:AppStorage.loadCycles()
